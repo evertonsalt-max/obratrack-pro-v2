@@ -1,11 +1,16 @@
 'use client'
-// hooks/useAuth.ts — Hook de autenticação global
-
 import { useEffect, useState, useCallback } from 'react'
-import { User, Session }                     from '@supabase/supabase-js'
-import { supabase }                          from '@/lib/supabase'
-import { useRouter }                         from 'next/navigation'
-import toast                                 from 'react-hot-toast'
+import { User, Session } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+
+function getSupabase() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export function useAuth() {
   const [user,    setUser]    = useState<User | null>(null)
@@ -14,56 +19,51 @@ export function useAuth() {
   const router = useRouter()
 
   useEffect(() => {
-    // Pegar sessão atual
+    const supabase = getSupabase()
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
     })
-
-    // Escutar mudanças de sessão em tempo real
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        setLoading(false)
-      }
-    )
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
     return () => subscription.unsubscribe()
   }, [])
 
-  // Login com email e senha
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const supabase = getSupabase()
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    router.push('/dashboard')
+    if (data.session) {
+      router.push('/dashboard')
+      router.refresh()
+    }
   }, [router])
 
-  // Cadastro com email e senha
   const signUp = useCallback(async (email: string, password: string, nome: string) => {
+    const supabase = getSupabase()
     const { error } = await supabase.auth.signUp({
       email, password,
       options: { data: { full_name: nome } }
     })
     if (error) throw error
-    toast.success('Conta criada! Verifique seu e-mail para confirmar.')
+    toast.success('Conta criada! Verifique seu e-mail.')
   }, [])
 
-  // Login com Google
   const signInWithGoogle = useCallback(async () => {
+    const supabase = getSupabase()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { access_type: 'offline', prompt: 'consent' }
-      }
+      options: { redirectTo: `${window.location.origin}/auth/callback` }
     })
     if (error) throw error
   }, [])
 
-  // Recuperar senha
   const resetPassword = useCallback(async (email: string) => {
+    const supabase = getSupabase()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?type=recovery`
     })
@@ -71,8 +71,8 @@ export function useAuth() {
     toast.success('E-mail de recuperação enviado!')
   }, [])
 
-  // Logout
   const signOut = useCallback(async () => {
+    const supabase = getSupabase()
     await supabase.auth.signOut()
     router.push('/login')
     toast.success('Sessão encerrada.')
