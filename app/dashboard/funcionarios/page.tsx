@@ -1,10 +1,27 @@
 'use client'
 import { useEmployees } from '@/hooks/useData'
 import { useState } from 'react'
-import { Users, Plus } from 'lucide-react'
+import { Users, Plus, X } from 'lucide-react'
+
+const hoje = new Date().toISOString().split('T')[0]
 
 export default function FuncionariosPage() {
-  const { employees, loading, add, update, remove } = useEmployees()
+  const { employees, loading, add, remove } = useEmployees()
+  const [modal, setModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ nome:'', apelido:'', telefone:'', funcao:'', diaria:'', status:'ativo', admissao: hoje })
+  const up = (k: string) => (e: any) => setForm(p => ({...p, [k]: e.target.value}))
+
+  const salvar = async () => {
+    if (!form.nome || !form.funcao) return alert('Nome e função são obrigatórios')
+    setSaving(true)
+    try {
+      await add({ nome: form.nome, apelido: form.apelido, telefone: form.telefone, funcao: form.funcao, diaria: Number(form.diaria) || 0, status: form.status as any, admissao: form.admissao, obs: '' })
+      setModal(false)
+      setForm({ nome:'', apelido:'', telefone:'', funcao:'', diaria:'', status:'ativo', admissao: hoje })
+    } catch(e) { alert('Erro ao salvar') }
+    setSaving(false)
+  }
 
   if (loading) return (
     <div className="p-6 flex items-center justify-center h-64">
@@ -19,7 +36,7 @@ export default function FuncionariosPage() {
           <h1 className="text-2xl font-extrabold text-white mb-1">Funcionários</h1>
           <p className="text-gray-400 text-sm">{employees.length} cadastrados</p>
         </div>
-        <button className="btn-primary">
+        <button onClick={() => setModal(true)} className="btn-primary">
           <Plus size={16}/> Novo Funcionário
         </button>
       </div>
@@ -35,10 +52,9 @@ export default function FuncionariosPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-800">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Nome</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Função</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Diária</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                {['Nome','Função','Diária','Status','Ações'].map(h => (
+                  <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -60,9 +76,13 @@ export default function FuncionariosPage() {
                     R$ {(e.diaria || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={e.status === 'ativo' ? 'badge-green' : 'badge-gray'}>
-                      {e.status}
-                    </span>
+                    <span className={e.status === 'ativo' ? 'badge-green' : 'badge-gray'}>{e.status}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button onClick={() => { if(confirm(`Excluir ${e.nome}?`)) remove(e.id) }}
+                      className="text-red-400 hover:text-red-300 text-xs border border-red-400/30 hover:border-red-400 px-2 py-1 rounded transition-colors">
+                      Excluir
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -70,6 +90,59 @@ export default function FuncionariosPage() {
           </table>
         )}
       </div>
+
+      {modal && (
+        <div onClick={e => { if(e.target === e.currentTarget) setModal(false) }}
+          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex justify-between items-center p-5 border-b border-gray-800">
+              <h2 className="text-white font-bold text-lg">Novo Funcionário</h2>
+              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white"><X size={20}/></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Nome Completo *</label>
+                  <input value={form.nome} onChange={up('nome')} placeholder="João da Silva" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">Apelido</label>
+                  <input value={form.apelido} onChange={up('apelido')} placeholder="João" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">Telefone</label>
+                  <input value={form.telefone} onChange={up('telefone')} placeholder="(11) 99999-0000" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">Função *</label>
+                  <input value={form.funcao} onChange={up('funcao')} placeholder="Pedreiro" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">Valor Diária (R$)</label>
+                  <input type="number" value={form.diaria} onChange={up('diaria')} placeholder="180" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">Status</label>
+                  <select value={form.status} onChange={up('status')} className="input-field">
+                    <option value="ativo">Ativo</option>
+                    <option value="inativo">Inativo</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">Data Admissão</label>
+                <input type="date" value={form.admissao} onChange={up('admissao')} className="input-field"/>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-800">
+              <button onClick={() => setModal(false)} className="btn-ghost">Cancelar</button>
+              <button onClick={salvar} disabled={saving} className="btn-primary">
+                {saving ? 'Salvando...' : 'Salvar Funcionário'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
