@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx'
 import { MESES, JORNADA_CONFIG, DESCONTO_TIPOS } from '@/types'
 import { Download, Printer, Filter, TrendingUp, Users, DollarSign, Shield, FileText, AlertCircle } from 'lucide-react'
 
-const fmtR$ = (v: any) => 'R$ ' + (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2})
+const fmtR$ = (v: any) => { try { return 'R$ ' + (Number(v)||0).toLocaleString } catch { return 'R$ 0,00' } // ('pt-BR',{minimumFractionDigits:2})
 const fmtBR = (d: string) => { try{return format(new Date(d+'T12:00:00'),'dd/MM/yy')}catch{return d} }
 type Aba = 'empresa'|'jornadas'|'financeiro'|'encargos'|'funcionario'
 
