@@ -1,17 +1,17 @@
 'use client'
-import { usePayments, useEmployees, useWorkLogs, useFinancialSummary } from '@/hooks/useData'
+import { usePayments, useEmployees, useWorkLogs, useFinancialSummary, useEmployeeTaxes } from '@/hooks/useData'
 import { useState } from 'react'
 import { DollarSign, Plus, X } from 'lucide-react'
 import { format } from 'date-fns'
 
 const hoje = new Date().toISOString().split('T')[0]
-const fmtR$ = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+const fmtR$ = (v: any) => { const n = Number(v); return 'R$ ' + (isNaN(n) ? 0 : n).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }
 
 export default function PagamentosPage() {
   const { payments, loading, add, remove } = usePayments()
   const { employees } = useEmployees()
   const { logs } = useWorkLogs()
-  const summary = useFinancialSummary(employees, logs, payments)
+  const { taxes } = useEmployeeTaxes(); const summary = useFinancialSummary(employees, logs, payments, taxes)
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ employee_id: '', data: hoje, valor: '', tipo: 'Semanal', obs: '' })
