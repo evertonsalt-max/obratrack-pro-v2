@@ -1,24 +1,28 @@
-// app/auth/callback/route.ts
-// Processa o retorno do Google OAuth e recuperação de senha
-
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { NextRequest, NextResponse }  from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const type = searchParams.get('type')
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
-    const supabase = createServerSupabaseClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) { return cookieStore.get(name)?.value },
+          set(name, value, options) { cookieStore.set({ name, value, ...options }) },
+          remove(name, options) { cookieStore.set({ name, value: '', ...options }) },
+        },
+      }
+    )
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error) return NextResponse.redirect(`${origin}${next}`)
   }
 
-  // Recuperação de senha → vai para página de redefinição
-  if (type === 'recovery') {
-    return NextResponse.redirect(`${origin}/nova-senha`)
-  }
-
-  // Login normal → vai para dashboard
-  return NextResponse.redirect(`${origin}/dashboard`)
+  return NextResponse.redirect(`${origin}/login`)
 }
