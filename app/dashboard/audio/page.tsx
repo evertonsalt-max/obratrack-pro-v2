@@ -70,7 +70,7 @@ export default function AudioPage() {
     try {
       const lista = employees.map(f => `id:${f.id}|"${f.apelido || f.nome}"`).join('\n')
       const prompt = `Extraia dados de registro de trabalho.\nDATA HOJE: ${hoje}\nFuncionários:\n${lista}\nTexto: "${txt}"\nResponda APENAS com JSON válido:\n{"funcionarioId":"uuid ou null","funcionarioNome":"string","data":"YYYY-MM-DD","local":"string","vale":false,"valorVale":0,"entrada":"HH:MM ou null","saida":"HH:MM ou null","obs":"string","confianca":80}`
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const r = await fetch('/api/audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
