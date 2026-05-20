@@ -309,25 +309,7 @@ export default function RelatoriosPage() {
                     obs: r.obs || '',
                   }))}
                   nomeFuncionario={s.employee.nome}
-                />
-                <TabelaDetalhadaFuncionario
-                  registros={empLogs.map(r => ({
-                    id: r.id,
-                    funcionario: r.employee_name,
-                    data: r.data,
-                    jornada: r.jornada === 'DIA_INTEIRO' ? 'Dia Inteiro' : r.jornada === 'MEIO_TURNO' ? 'Meio Turno' : 'Não Trabalhou',
-                    local: r.local || '',
-                    horario_entrada: r.entrada || '',
-                    horario_saida: r.saida || '',
-                    horas: Number(r.horas) || 0,
-                    diaria: Number(r.diaria) || 0,
-                    desconto: Number(r.discount_value) || Number(r.valor_vale) || 0,
-                    motivo: r.absence_reason || '',
-                    obs: r.obs || '',
-                  }))}
-                  nomeFuncionario={s.employee.nome}
-                />
-              </div>
+                />              </div>
             )
           })}
         </div>
