@@ -23,14 +23,6 @@
   --stat-red-ibg: #2f0a0a;
 }
 html.light {
-  --stat-blue-bg:  #eff6ff;
-  --stat-blue-ibg: #dbeafe;
-  --stat-green-bg:  #f0fdf4;
-  --stat-green-ibg: #dcfce7;
-  --stat-amber-bg:  #fffbeb;
-  --stat-amber-ibg: #fef3c7;
-  --stat-red-bg:  #fef2f2;
-  --stat-red-ibg: #fee2e2;
   --bg-primary:   #f4f4f8;
   --bg-secondary: #ffffff;
   --bg-card:      #ffffff;
@@ -41,15 +33,16 @@ html.light {
   --text-muted:   #9090aa;
   --accent:       #5b4fff;
   --accent-light: #7c6fff;
-  --stat-blue-bg:  #1a2240;
-  --stat-blue-ibg: #2a3a6e;
-  --stat-green-bg:  #0f2020;
-  --stat-green-ibg: #0a3020;
-  --stat-amber-bg:  #1f1500;
-  --stat-amber-ibg: #2f1f00;
-  --stat-red-bg:  #1f0a0a;
-  --stat-red-ibg: #2f0a0a;
+  --stat-blue-bg:  #eff6ff;
+  --stat-blue-ibg: #dbeafe;
+  --stat-green-bg:  #f0fdf4;
+  --stat-green-ibg: #dcfce7;
+  --stat-amber-bg:  #fffbeb;
+  --stat-amber-ibg: #fef3c7;
+  --stat-red-bg:  #fef2f2;
+  --stat-red-ibg: #fee2e2;
 }
+
 
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
