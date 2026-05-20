@@ -35,10 +35,12 @@ interface PDFParams {
   logoBase64?: string
   imgFoto1?: string
   imgFoto2?: string
+  legendaFoto1?: string
+  legendaFoto2?: string
 }
 
 export async function gerarPDF(params: PDFParams) {
-  const { data, itensMaoObra, itensMateriais, totalMaoObra, totalMateriais, totalGeral, logoBase64, imgFoto1, imgFoto2 } = params
+  const { data, itensMaoObra, itensMateriais, totalMaoObra, totalMateriais, totalGeral, logoBase64, imgFoto1, imgFoto2, legendaFoto1, legendaFoto2 } = params
 
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const W = 210
@@ -134,7 +136,16 @@ export async function gerarPDF(params: PDFParams) {
 
   // Imagem de fundo/serviço
   if (imgFoto1) {
-    try { pdf.addImage(imgFoto1, 'JPEG', M, 108, W - 2 * M, 60) } catch (_) {}
+    try {
+      pdf.addImage(imgFoto1, 'JPEG', M, 108, W - 2 * M, 60)
+      if (legendaFoto1) {
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'italic')
+        pdf.setTextColor(120, 120, 120)
+        pdf.text(legendaFoto1, W / 2, 171, { align: 'center' })
+        pdf.setTextColor(0, 0, 0)
+      }
+    } catch (_) {}
   } else {
     pdf.setFillColor(245, 245, 245)
     pdf.rect(M, 108, W - 2 * M, 60, 'F')
@@ -226,8 +237,19 @@ export async function gerarPDF(params: PDFParams) {
   y += 4
   // Foto 2
   if (imgFoto2) {
-    try { pdf.addImage(imgFoto2, 'JPEG', M, y, W - 2 * M, 50) } catch (_) {}
-    y += 54
+    try {
+      pdf.addImage(imgFoto2, 'JPEG', M, y, W - 2 * M, 50)
+      y += 52
+      if (legendaFoto2) {
+        pdf.setFontSize(8)
+        pdf.setFont('helvetica', 'italic')
+        pdf.setTextColor(120, 120, 120)
+        pdf.text(legendaFoto2, W / 2, y, { align: 'center' })
+        pdf.setTextColor(0, 0, 0)
+        y += 5
+      }
+    } catch (_) {}
+    y += 2
   }
 
   // Dados de contato

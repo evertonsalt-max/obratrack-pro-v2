@@ -73,6 +73,9 @@ export default function OrcamentoFormPage() {
   const [logoBase64, setLogoBase64] = useState<string>('')
   const [imgFoto1, setImgFoto1] = useState<string>('')
   const [imgFoto2, setImgFoto2] = useState<string>('')
+  const [legendaLogo, setLegendaLogo] = useState<string>('')
+  const [legendaFoto1, setLegendaFoto1] = useState<string>('')
+  const [legendaFoto2, setLegendaFoto2] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'empresa'|'cliente'|'maoobra'|'materiais'|'condicoes'>('empresa')
 
@@ -140,7 +143,7 @@ export default function OrcamentoFormPage() {
     await gerarPDF({
       data, itensMaoObra, itensMateriais,
       totalMaoObra, totalMateriais, totalGeral,
-      logoBase64, imgFoto1, imgFoto2,
+      logoBase64, imgFoto1, imgFoto2, legendaFoto1, legendaFoto2,
     })
   }
 
@@ -213,13 +216,21 @@ export default function OrcamentoFormPage() {
     </div>
   )
 
-  const ImgUpload = ({ label, src, onClick, inputRef, onChange }: any) => (
+  const ImgUpload = ({ label, src, onClick, inputRef, onChange, legenda, onLegenda }: any) => (
     <div style={fieldStyle}>
       <label style={labelStyle}>{label}</label>
       <div onClick={onClick} style={{ border: '1px dashed var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', cursor: 'pointer', background: 'var(--bg-hover)', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
         {src ? <img src={src} style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} alt="preview"/> : <div style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><ImageIcon size={20}/> Clique para carregar</div>}
       </div>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onChange}/>
+      {src && (
+        <input
+          value={legenda || ''}
+          onChange={e => onLegenda && onLegenda(e.target.value)}
+          placeholder="Legenda da foto (opcional)"
+          style={{ ...inputStyle, fontSize: 12, marginTop: 4 }}
+        />
+      )}
     </div>
   )
 
@@ -287,8 +298,8 @@ export default function OrcamentoFormPage() {
         {tab === 'empresa' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <ImgUpload label="Logo da empresa" src={logoBase64} onClick={() => logoRef.current?.click()} inputRef={logoRef} onChange={handleImagem(setLogoBase64)}/>
-              <ImgUpload label="Foto do serviço 1" src={imgFoto1} onClick={() => foto1Ref.current?.click()} inputRef={foto1Ref} onChange={handleImagem(setImgFoto1)}/>
+              <ImgUpload label="Logo da empresa" src={logoBase64} onClick={() => logoRef.current?.click()} inputRef={logoRef} onChange={handleImagem(setLogoBase64)} legenda={legendaLogo} onLegenda={setLegendaLogo}/>
+              <ImgUpload label="Foto do serviço 1" src={imgFoto1} onClick={() => foto1Ref.current?.click()} inputRef={foto1Ref} onChange={handleImagem(setImgFoto1)} legenda={legendaFoto1} onLegenda={setLegendaFoto1}/>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div style={fieldStyle}><label style={labelStyle}>Nome da empresa</label><input value={data.empresa_nome} onChange={up('empresa_nome')} style={inputStyle}/></div>
@@ -331,7 +342,7 @@ export default function OrcamentoFormPage() {
             <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Garantia</label><textarea value={data.garantia} onChange={up('garantia')} style={{ ...textareaStyle, minHeight: 60 }}/></div>
             <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Observações gerais</label><textarea value={data.observacoes} onChange={up('observacoes')} style={textareaStyle}/></div>
             <div style={{ gridColumn: 'span 2' }}>
-              <ImgUpload label="Foto adicional (aparece no PDF)" src={imgFoto2} onClick={() => foto2Ref.current?.click()} inputRef={foto2Ref} onChange={handleImagem(setImgFoto2)}/>
+              <ImgUpload label="Foto adicional (aparece no PDF)" src={imgFoto2} onClick={() => foto2Ref.current?.click()} inputRef={foto2Ref} onChange={handleImagem(setImgFoto2)} legenda={legendaFoto2} onLegenda={setLegendaFoto2}/>
               <input ref={foto2Ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImagem(setImgFoto2)}/>
             </div>
           </div>
