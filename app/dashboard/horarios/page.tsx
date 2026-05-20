@@ -1,7 +1,7 @@
 'use client'
 import { useWorkLogs, useEmployees, useWorksites } from '@/hooks/useData'
 import { useState } from 'react'
-import { Clock, Plus, X, Trash2 } from 'lucide-react'
+import { Clock, Plus, X, Trash2, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 import { JORNADA_CONFIG, AUSENCIA_MOTIVOS, JornadaTipo } from '@/types'
 
@@ -11,11 +11,12 @@ function calcH(e:string,s:string){if(!e||!s)return 0;const[eh,em]=e.split(':').m
 const JORNADAS = Object.entries(JORNADA_CONFIG) as [JornadaTipo, typeof JORNADA_CONFIG[JornadaTipo]][]
 
 export default function HorariosPage() {
-  const { logs, loading, add, remove } = useWorkLogs()
+  const { logs, loading, add, update, remove } = useWorkLogs()
   const { employees } = useEmployees()
   const { worksites, add: addSite } = useWorksites()
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editId, setEditId] = useState<string|null>(null)
   const [fF, setFF] = useState('')
   const [fD, setFD] = useState('')
   const [fJ, setFJ] = useState('')
@@ -45,6 +46,19 @@ export default function HorariosPage() {
     try {
       const emp = employees.find(e => e.id === form.employee_id)!
       const horas = isAus ? 0 : calcH(form.entrada, form.saida)
+      if (editId) {
+        await update(editId, {
+          employee_id: form.employee_id,
+          employee_name: emp.apelido || emp.nome.split(' ')[0],
+          data: form.data, local: isAus ? '' : form.local,
+          jornada: form.jornada, entrada: isAus ? null : (form.entrada || null),
+          saida: isAus ? null : (form.saida || null), horas,
+          diaria: isAus ? 0 : (emp.diaria || 0),
+          discount_value: (!isAus && form.discount_value) ? Number(form.discount_value) : 0,
+          absence_reason: isAus ? form.absence_reason : '',
+          obs: form.obs,
+        })
+      } else {
       await add({
         employee_id: form.employee_id,
         employee_name: emp.apelido || emp.nome.split(' ')[0],
@@ -58,10 +72,29 @@ export default function HorariosPage() {
         obs: form.obs,
       })
       if (!isAus && form.local && !worksites.find(w => w.nome === form.local)) addSite(form.local)
+      }
       setModal(false)
+      setEditId(null)
       setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'' })
     } catch { alert('Erro ao salvar') }
     setSaving(false)
+  }
+
+  const abrirEdicao = (r: any) => {
+    setEditId(r.id)
+    setForm({
+      employee_id: r.employee_id,
+      data: r.data,
+      local: r.local || '',
+      jornada: r.jornada,
+      entrada: r.entrada || '07:00',
+      saida: r.saida || '18:00',
+      vale: (Number(r.discount_value)||Number(r.valor_vale)||0) > 0,
+      discount_value: String(Number(r.discount_value)||Number(r.valor_vale)||0||''),
+      obs: r.obs || '',
+      absence_reason: r.absence_reason || '',
+    })
+    setModal(true)
   }
 
   const emp = employees.find(e => e.id === form.employee_id)
@@ -76,7 +109,7 @@ export default function HorariosPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div><h1 className="text-2xl font-extrabold text-white mb-1">Horários</h1><p className="text-gray-400 text-sm">{logs.length} registros</p></div>
-        <button onClick={() => setModal(true)} className="btn-primary"><Plus size={16}/> Novo Registro</button>
+        <button onClick={() => {setEditId(null);setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'' });setModal(true)}} className="btn-primary"><Plus size={16}/> Novo Registro</button>
       </div>
 
       <div className="card mb-6 flex gap-4 flex-wrap items-end">
@@ -148,7 +181,10 @@ export default function HorariosPage() {
                       <td className="py-3 px-3 text-sm font-semibold" style={{color:isAus?'#6b7280':'#22c55e'}}>{isAus?'—':fmtR$(r.diaria)}</td>
                       <td className="py-3 px-3 text-yellow-400 text-sm">{desc>0?fmtR$(desc):'—'}</td>
                       <td className="py-3 px-3 text-gray-400 text-xs max-w-[140px] truncate">{r.absence_reason||r.obs||'—'}</td>
-                      <td className="py-3 px-3"><button onClick={()=>{if(confirm('Excluir?'))remove(r.id)}} className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10"><Trash2 size={13}/></button></td>
+                      <td className="py-3 px-3"><div className="flex gap-1">
+                      <button onClick={()=>abrirEdicao(r)} className="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-blue-500/10"><Pencil size={13}/></button>
+                      <button onClick={()=>{if(confirm('Excluir?'))remove(r.id)}} className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10"><Trash2 size={13}/></button>
+                    </div></td>
                     </tr>
                   )
                 })}
@@ -162,8 +198,8 @@ export default function HorariosPage() {
         <div onClick={e=>{if(e.target===e.currentTarget)setModal(false)}} className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-xl shadow-2xl max-h-[94vh] overflow-y-auto">
             <div className="flex justify-between items-center p-5 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-              <h2 className="text-white font-bold text-lg">Novo Registro</h2>
-              <button onClick={()=>setModal(false)} className="text-gray-400 hover:text-white"><X size={20}/></button>
+              <h2 className="text-white font-bold text-lg">{editId ? "Editar Registro" : "Novo Registro"}</h2>
+              <button onClick={()=>{setModal(false);setEditId(null)}} className="text-gray-400 hover:text-white"><X size={20}/></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -244,7 +280,7 @@ export default function HorariosPage() {
               )}
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-gray-800">
-              <button onClick={()=>setModal(false)} className="btn-ghost">Cancelar</button>
+              <button onClick={()=>{setModal(false);setEditId(null)}} className="btn-ghost">Cancelar</button>
               <button onClick={salvar} disabled={saving} className="btn-primary">
                 {saving?'Salvando...':isAusencia?'🚫 Registrar Ausência':'Salvar Registro'}
               </button>

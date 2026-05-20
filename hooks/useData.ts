@@ -77,6 +77,11 @@ export function useWorkLogs(filters?: { employeeId?: string; dateFrom?: string; 
     const ch = sb().channel('wl').on('postgres_changes',{event:'*',schema:'public',table:'work_logs'},fetch).subscribe()
     return () => { sb().removeChannel(ch) }
   }, [fetch])
+  const update = useCallback(async (id: string, data: Partial<WorkLog>) => {
+    await sb().from('work_logs').update(data).eq('id', id)
+    fetch()
+  }, [fetch])
+
   const add = useCallback(async (data: Omit<WorkLog,'id'|'user_id'|'created_at'>) => {
     const { data: { user } } = await sb().auth.getUser()
     const { error } = await sb().from('work_logs').insert({ ...data, user_id: user!.id })
