@@ -62,6 +62,69 @@ const defaultData = {
   observacoes: '',
 }
 
+const inputStyleGlobal = { background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', width: '100%' }
+
+function ItemTable({ items, setItems, label }: { items: Item[], setItems: any, label: string }) {
+  const updateItem = (id: string, key: string, value: any) => {
+    setItems((prev: Item[]) => prev.map((item: Item) => item.id === id ? { ...item, [key]: value } : item))
+  }
+  return (
+    <div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+              {['Descricao', 'Qtd', 'Unid.', 'Valor unit.', 'Desc. %', 'Total', ''].map(h => (
+                <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '6px 8px', minWidth: 200 }}>
+                  <input value={item.descricao} onChange={e => updateItem(item.id, 'descricao', e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12 }} placeholder="Descricao do servico/material"/>
+                </td>
+                <td style={{ padding: '6px 8px', width: 70 }}>
+                  <input type="number" value={item.quantidade} onChange={e => updateItem(item.id, 'quantidade', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 70 }}/>
+                </td>
+                <td style={{ padding: '6px 8px', width: 80 }}>
+                  <select value={item.unidade} onChange={e => updateItem(item.id, 'unidade', e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 6px', fontSize: 12, width: 75 }}>
+                    {['vb','m2','m','un','lt','bd','gl','pc','mt','hr'].map(u => <option key={u}>{u}</option>)}
+                  </select>
+                </td>
+                <td style={{ padding: '6px 8px', width: 110 }}>
+                  <input type="number" value={item.valor_unitario} onChange={e => updateItem(item.id, 'valor_unitario', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 100 }}/>
+                </td>
+                <td style={{ padding: '6px 8px', width: 70 }}>
+                  <input type="number" value={item.desconto_pct} min={0} max={100} onChange={e => updateItem(item.id, 'desconto_pct', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 60 }}/>
+                </td>
+                <td style={{ padding: '6px 8px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'right' }}>
+                  {fmtR$(calcItem(item))}
+                </td>
+                <td style={{ padding: '6px 8px' }}>
+                  <button onClick={() => setItems((prev: Item[]) => prev.filter((i: Item) => i.id !== item.id))} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6, padding: '4px 6px', color: '#f87171', cursor: 'pointer' }}>
+                    <Trash2 size={12}/>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+        <button onClick={() => setItems((prev: Item[]) => [...prev, novoItem()])} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}>
+          <Plus size={13}/> Adicionar item
+        </button>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Total {label}</p>
+          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{fmtR$(items.reduce((s, i) => s + calcItem(i), 0))}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ImgUpload({ label, src, onClick, inputRef, onChange, legenda, onLegenda, inputStyle }: any) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -185,61 +248,7 @@ export default function OrcamentoFormPage() {
     { id: 'condicoes', label: 'Condições' },
   ]
 
-  const ItemTable = ({ items, setItems, label }: { items: Item[], setItems: any, label: string }) => (
-    <div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-              {['Descrição', 'Qtd', 'Unid.', 'Valor unit.', 'Desc. %', 'Total', ''].map(h => (
-                <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '6px 8px', minWidth: 200 }}>
-                  <input value={item.descricao} onChange={e => updateItem(items, setItems, item.id, 'descricao', e.target.value)} style={{ ...inputStyle, padding: '5px 8px', fontSize: 12 }} placeholder="Descrição do serviço/material"/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 70 }}>
-                  <input type="number" value={item.quantidade} onChange={e => updateItem(items, setItems, item.id, 'quantidade', +e.target.value)} style={{ ...inputStyle, padding: '5px 8px', fontSize: 12, width: 70 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 80 }}>
-                  <select value={item.unidade} onChange={e => updateItem(items, setItems, item.id, 'unidade', e.target.value)} style={{ ...inputStyle, padding: '5px 6px', fontSize: 12, width: 75 }}>
-                    {['vb','m²','m','un','lt','bd','gl','pc','mt','hr'].map(u => <option key={u}>{u}</option>)}
-                  </select>
-                </td>
-                <td style={{ padding: '6px 8px', width: 110 }}>
-                  <input type="number" value={item.valor_unitario} onChange={e => updateItem(items, setItems, item.id, 'valor_unitario', +e.target.value)} style={{ ...inputStyle, padding: '5px 8px', fontSize: 12, width: 100 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 70 }}>
-                  <input type="number" value={item.desconto_pct} min={0} max={100} onChange={e => updateItem(items, setItems, item.id, 'desconto_pct', +e.target.value)} style={{ ...inputStyle, padding: '5px 8px', fontSize: 12, width: 60 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                  {fmtR$(calcItem(item))}
-                </td>
-                <td style={{ padding: '6px 8px' }}>
-                  <button onClick={() => setItems(items.filter((i: Item) => i.id !== item.id))} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6, padding: '4px 6px', color: '#f87171', cursor: 'pointer' }}>
-                    <Trash2 size={12}/>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-        <button onClick={() => setItems([...items, novoItem()])} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}>
-          <Plus size={13}/> Adicionar item
-        </button>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Total {label}</p>
-          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{fmtR$(items.reduce((s, i) => s + calcItem(i), 0))}</p>
-        </div>
-      </div>
-    </div>
-  )
+
 
 
 
