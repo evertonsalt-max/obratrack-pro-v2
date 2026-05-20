@@ -35,6 +35,7 @@ async function uploadCSV(drive: any, name: string, csv: string) {
   const buf = Buffer.from('\uFEFF' + csv, 'utf-8')
   const stream = Readable.from([buf])
   await drive.files.create({
+    supportsAllDrives: true,
     requestBody: {
       name,
       mimeType: 'text/csv',
