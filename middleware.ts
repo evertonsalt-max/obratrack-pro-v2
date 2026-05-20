@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Rotas públicas (não precisam de login)
-  const publicRoutes = ['/login', '/cadastro', '/recuperar-senha', '/auth/callback']
+  const publicRoutes = ['/login', '/cadastro', '/recuperar-senha', '/auth/callback', '/api/backup']
   const isPublic = publicRoutes.some(r => pathname.startsWith(r))
 
   // Se não está autenticado e tenta acessar rota protegida → login
