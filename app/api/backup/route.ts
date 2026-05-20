@@ -16,17 +16,15 @@ function toCSV(rows: any[], cols: string[]) {
       return v.includes(';') ? '"' + v + '"' : v
     }).join(';')
   )
-  return header + '
-' + lines.join('
-')
+  return [header, ...lines].join('\n')
 }
 
 async function getDrive() {
+  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || '').split('\\n').join('\n')
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\n/g, '
-'),
+      private_key: privateKey,
     },
     scopes: ['https://www.googleapis.com/auth/drive.file'],
   })
@@ -34,7 +32,7 @@ async function getDrive() {
 }
 
 async function uploadCSV(drive: any, name: string, csv: string) {
-  const buf = Buffer.from('ï»¿' + csv, 'utf-8')
+  const buf = Buffer.from('\uFEFF' + csv, 'utf-8')
   const stream = Readable.from([buf])
   await drive.files.create({
     requestBody: {
@@ -54,18 +52,21 @@ export async function GET(req: Request) {
   try {
     const drive = await getDrive()
     const date = new Date().toISOString().split('T')[0]
+
     const [logs, employees, payments, taxes] = await Promise.all([
       supabase.from('work_logs').select('*').then(r => r.data || []),
       supabase.from('employees').select('*').then(r => r.data || []),
       supabase.from('payments').select('*').then(r => r.data || []),
       supabase.from('employee_taxes').select('*').then(r => r.data || []),
     ])
+
     await Promise.all([
-      uploadCSV(drive, date + '_horarios.csv',      toCSV(logs,       ['id','employee_id','employee_name','data','jornada','local','entrada','saida','horas','diaria','discount_value','absence_reason','obs'])),
-      uploadCSV(drive, date + '_funcionarios.csv',  toCSV(employees,  ['id','nome','apelido','funcao','diaria','status'])),
-      uploadCSV(drive, date + '_pagamentos.csv',    toCSV(payments,   ['id','employee_id','employee_name','data','valor','tipo','obs'])),
-      uploadCSV(drive, date + '_encargos.csv',      toCSV(taxes,      ['id','employee_id','month','year','inss_value','fgts_value','notes'])),
+      uploadCSV(drive, date + '_horarios.csv', toCSV(logs, ['id','employee_id','employee_name','data','jornada','local','entrada','saida','horas','diaria','discount_value','absence_reason','obs'])),
+      uploadCSV(drive, date + '_funcionarios.csv', toCSV(employees, ['id','nome','apelido','funcao','diaria','status'])),
+      uploadCSV(drive, date + '_pagamentos.csv', toCSV(payments, ['id','employee_id','employee_name','data','valor','tipo','obs'])),
+      uploadCSV(drive, date + '_encargos.csv', toCSV(taxes, ['id','employee_id','month','year','inss_value','fgts_value','notes'])),
     ])
+
     return NextResponse.json({ ok: true, date, tables: ['horarios','funcionarios','pagamentos','encargos'] })
   } catch (err: any) {
     console.error('Backup error:', err)
