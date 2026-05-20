@@ -5,10 +5,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Rotas de API sempre passam livre
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
   let response = NextResponse.next({ request: { headers: request.headers } })
 
   const supabase = createServerClient(
@@ -36,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Rotas públicas (não precisam de login)
-  const publicRoutes = ['/login', '/cadastro', '/recuperar-senha', '/auth/callback', '/api/backup']
+  const publicRoutes = ['/login', '/cadastro', '/recuperar-senha', '/auth/callback']
   const isPublic = publicRoutes.some(r => pathname.startsWith(r))
 
   // Se não está autenticado e tenta acessar rota protegida → login
