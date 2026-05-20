@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import * as XLSX from 'xlsx'
 import { MESES, JORNADA_CONFIG } from '@/types'
 import { Download, Printer, Filter, TrendingUp, Users, DollarSign, Shield, FileText, AlertCircle } from 'lucide-react'
+import { TabelaDetalhadaFuncionario } from '@/components/relatorios/TabelaDetalhadaFuncionario'
 
 const fmtR$ = (v: any) => { const n = Number(v); return 'R$ ' + (isNaN(n) ? 0 : n).toLocaleString('pt-BR',{minimumFractionDigits:2}) }
 const fmtBR = (d: string) => { try{return format(new Date(d+'T12:00:00'),'dd/MM/yy')}catch{return d} }
@@ -292,6 +293,23 @@ export default function RelatoriosPage() {
                 <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700"><h4 className="text-white font-bold text-sm mb-3">Resumo Final</h4>
                   <div className="grid grid-cols-2 gap-2">{[{l:'Dias trabalhados',v:s.dias||0,c:'text-green-400'},{l:'Faltas',v:s.faltas||0,c:'text-red-400'},{l:'H. personalizadas',v:(s.horasOutro||0).toFixed(1)+'h',c:'text-yellow-400'},{l:'Total bruto',v:fmtR$(s.bruto),c:'text-white'},{l:'Total descontos',v:fmtR$(s.descontos),c:'text-yellow-400'},{l:'Total encargos',v:fmtR$((s.inss||0)+(s.fgts||0)),c:'text-purple-400'},{l:'Total líquido',v:fmtR$(s.liquido),c:'text-blue-400'},{l:'Saldo pendente',v:fmtR$(s.saldo),c:(s.saldo||0)>0?'text-red-400':'text-green-400'}].map(({l,v,c})=><div key={l} className="flex justify-between py-1 border-b border-gray-700 last:border-0"><span className="text-gray-400 text-xs">{l}</span><span className={`font-semibold text-xs ${c}`}>{v}</span></div>)}</div>
                 </div>
+                <TabelaDetalhadaFuncionario
+                  registros={empLogs.map(r => ({
+                    id: r.id,
+                    funcionario: r.employee_name,
+                    data: r.data,
+                    jornada: r.jornada === 'DIA_INTEIRO' ? 'Dia Inteiro' : r.jornada === 'MEIO_TURNO' ? 'Meio Turno' : 'Não Trabalhou',
+                    local: r.local || '',
+                    horario_entrada: r.entrada || '',
+                    horario_saida: r.saida || '',
+                    horas: Number(r.horas) || 0,
+                    diaria: Number(r.diaria) || 0,
+                    desconto: Number(r.discount_value) || Number(r.valor_vale) || 0,
+                    motivo: r.absence_reason || '',
+                    obs: r.obs || '',
+                  }))}
+                  nomeFuncionario={s.employee.nome}
+                />
               </div>
             )
           })}
