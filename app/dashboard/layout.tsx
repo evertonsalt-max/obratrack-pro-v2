@@ -97,6 +97,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="text-xs text-gray-500 truncate">{user.email}</p>
           </div>
         </div>
+        <button onClick={toggle}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors mb-1">
+          {theme === 'dark' ? <Sun size={13}/> : <Moon size={13}/>}
+          {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+        </button>
         <button onClick={signOut}
           className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
           <LogOut size={13}/> Sair
