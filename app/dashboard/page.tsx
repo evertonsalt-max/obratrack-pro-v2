@@ -77,10 +77,10 @@ export default function DashboardPage() {
       {/* Stats grid 2x2 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 16px 16px' }}>
         {[
-          { label: 'Funcionarios', val: ativos,        bg: 'var(--stat-blue-bg)',  ibg: 'var(--stat-blue-ibg)',  ic: '#3b82f6', icon: '👷' },
-          { label: 'Horas trabalhadas', val: horas.toFixed(1)+'h', bg: 'var(--stat-green-bg)', ibg: 'var(--stat-green-ibg)', ic: '#10b981', icon: '⏱' },
-          { label: 'Registros hoje', val: rHoje,        bg: 'var(--stat-amber-bg)', ibg: 'var(--stat-amber-ibg)', ic: '#f59e0b', icon: '📋' },
-          { label: 'Faltas',        val: faltas,        bg: 'var(--stat-red-bg)',   ibg: 'var(--stat-red-ibg)',   ic: '#ef4444', icon: '🚫' },
+          { label: 'Funcionarios', val: ativos,        bg: 'var(--stat-blue-bg)',  ibg: 'var(--stat-blue-ibg)',  ic: '#60a5fa', icon: '👷' },
+          { label: 'Horas trabalhadas', val: horas.toFixed(1)+'h', bg: 'var(--stat-green-bg)', ibg: 'var(--stat-green-ibg)', ic: '#4ade80', icon: '⏱' },
+          { label: 'Registros hoje', val: rHoje,        bg: 'var(--stat-amber-bg)', ibg: 'var(--stat-amber-ibg)', ic: '#fb923c', icon: '📋' },
+          { label: 'Faltas',        val: faltas,        bg: 'var(--stat-red-bg)',   ibg: 'var(--stat-red-ibg)',   ic: '#fca5a5', icon: '🚫' },
         ].map(({ label, val, bg, ibg, ic, icon }) => (
           <div key={label} style={{ background: bg, borderRadius: 16, padding: 14 }}>
             <div style={{ width: 32, height: 32, background: ibg, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginBottom: 8 }}>{icon}</div>
