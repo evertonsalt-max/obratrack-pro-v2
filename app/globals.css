@@ -72,3 +72,17 @@ html.light {
   .badge-red    { @apply bg-red-500/20    text-red-400    text-xs font-semibold px-2.5 py-0.5 rounded-full; }
   .badge-purple { @apply bg-purple-500/20 text-purple-400 text-xs font-semibold px-2.5 py-0.5 rounded-full; }
 }
+
+html.light table tbody tr:nth-child(even) { background: #f8f8fc; }
+html.light table tbody tr { color: var(--text-primary); }
+html.light table thead tr { border-color: var(--border); }
+html.light table tbody tr { border-color: var(--border); }
+html.light .text-white { color: var(--text-primary) !important; }
+html.light .text-gray-400 { color: var(--text-secondary) !important; }
+html.light .text-gray-500 { color: var(--text-muted) !important; }
+html.light .bg-gray-800\/20 { background: #f4f4f8 !important; }
+html.light .bg-gray-800\/50 { background: #ededf5 !important; }
+html.light .border-gray-800 { border-color: var(--border) !important; }
+html.light .bg-gray-800 { background: var(--bg-hover) !important; }
+html.light .bg-gray-900 { background: var(--bg-card) !important; }
+html.light select, html.light input { background: var(--bg-secondary) !important; color: var(--text-primary) !important; border-color: var(--border) !important; }
