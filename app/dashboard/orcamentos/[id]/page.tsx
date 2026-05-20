@@ -62,6 +62,31 @@ const defaultData = {
   observacoes: '',
 }
 
+function ImgUpload({ label, src, onClick, inputRef, onChange, legenda, onLegenda, inputStyle }: any) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</label>
+      <div onClick={onClick} style={{ border: '1px dashed var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', cursor: 'pointer', background: 'var(--bg-hover)', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+        {src
+          ? <img src={src} style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} alt="preview"/>
+          : <div style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 20 }}>🖼</span> Clique para carregar
+            </div>
+        }
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onChange}/>
+      {src && (
+        <input
+          value={legenda || ''}
+          onChange={e => onLegenda && onLegenda(e.target.value)}
+          placeholder="Legenda da foto (opcional)"
+          style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--text-primary)', width: '100%', marginTop: 2 }}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function OrcamentoFormPage() {
   const router = useRouter()
   const params = useParams()
@@ -216,23 +241,7 @@ export default function OrcamentoFormPage() {
     </div>
   )
 
-  const ImgUpload = ({ label, src, onClick, inputRef, onChange, legenda, onLegenda }: any) => (
-    <div style={fieldStyle}>
-      <label style={labelStyle}>{label}</label>
-      <div onClick={onClick} style={{ border: '1px dashed var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', cursor: 'pointer', background: 'var(--bg-hover)', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {src ? <img src={src} style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} alt="preview"/> : <div style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}><ImageIcon size={20}/> Clique para carregar</div>}
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onChange}/>
-      {src && (
-        <input
-          value={legenda || ''}
-          onChange={e => onLegenda && onLegenda(e.target.value)}
-          placeholder="Legenda da foto (opcional)"
-          style={{ ...inputStyle, fontSize: 12, marginTop: 4 }}
-        />
-      )}
-    </div>
-  )
+
 
   return (
     <div style={{ padding: 24, background: 'var(--bg-primary)', minHeight: '100vh' }}>
