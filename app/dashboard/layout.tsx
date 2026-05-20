@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth }     from '@/hooks/useAuth'
 import { useTheme }    from '@/hooks/useTheme'
 import {
-  LayoutDashboard, Users, Clock, DollarSign,
+  LayoutDashboard, Users, Clock, DollarSign, FileText,
   BarChart2, Mic, MapPin, Upload,
   LogOut, Shield, Menu, X, Sun, Moon
 } from 'lucide-react'
@@ -18,7 +18,8 @@ const navGroups = [
     items: [
       { href: '/dashboard',              icon: LayoutDashboard, label: 'Dashboard'    },
       { href: '/dashboard/funcionarios', icon: Users,           label: 'Funcionários' },
-      { href: '/dashboard/horarios',     icon: Clock,           label: 'Horários'     },
+      { href: '/dashboard/horarios',     icon: Clock,           label: 'Horarios'     },
+      { href: '/dashboard/orcamentos',   icon: FileText,        label: 'Orcamentos'   },
     ]
   },
   {
