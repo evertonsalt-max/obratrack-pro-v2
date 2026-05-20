@@ -5,10 +5,11 @@ import { createClient } from '@supabase/supabase-js'
 import { Plus, Trash2, Download, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import { gerarPDF } from '@/lib/OrcamentoPDF'
 
-const sb = () => createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+const sb = () => supabase
 
 const fmtR$ = (v: number) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
