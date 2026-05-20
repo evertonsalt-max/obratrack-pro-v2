@@ -1,26 +1,41 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter }  from 'next/navigation'
-import Link           from 'next/link'
-import { usePathname }from 'next/navigation'
-import { useAuth }    from '@/hooks/useAuth'
+import { useRouter }   from 'next/navigation'
+import Link            from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useAuth }     from '@/hooks/useAuth'
+import { useTheme }    from '@/hooks/useTheme'
 import {
   LayoutDashboard, Users, Clock, DollarSign,
   BarChart2, Mic, MapPin, Upload,
-  Layers, LogOut, ChevronRight, Shield, Menu, X, Sun, Moon
+  LogOut, Shield, Menu, X, Sun, Moon
 } from 'lucide-react'
-import { useTheme } from '@/hooks/useTheme'
 import clsx from 'clsx'
 
-const nav = [
-  { href: '/dashboard',             icon: LayoutDashboard, label: 'Dashboard'         },
-  { href: '/dashboard/funcionarios',icon: Users,           label: 'Funcionários'      },
-  { href: '/dashboard/horarios',    icon: Clock,           label: 'Horários'          },
-  { href: '/dashboard/pagamentos',  icon: DollarSign,      label: 'Pagamentos'        },
-  { href: '/dashboard/relatorios',  icon: BarChart2,       label: 'Relatórios'        },
-  { href: '/dashboard/audio',       icon: Mic,             label: 'Reg. Áudio'        },
-  { href: '/dashboard/obras',       icon: MapPin,          label: 'Obras'             },
-  { href: '/dashboard/importar',    icon: Upload,          label: 'Importar Planilha' },
+const navGroups = [
+  {
+    label: 'Principal',
+    items: [
+      { href: '/dashboard',              icon: LayoutDashboard, label: 'Dashboard'    },
+      { href: '/dashboard/funcionarios', icon: Users,           label: 'Funcionários' },
+      { href: '/dashboard/horarios',     icon: Clock,           label: 'Horários'     },
+    ]
+  },
+  {
+    label: 'Financeiro',
+    items: [
+      { href: '/dashboard/pagamentos',   icon: DollarSign, label: 'Pagamentos'  },
+      { href: '/dashboard/relatorios',   icon: BarChart2,  label: 'Relatórios'  },
+    ]
+  },
+  {
+    label: 'Ferramentas',
+    items: [
+      { href: '/dashboard/audio',    icon: Mic,    label: 'Reg. Áudio'       },
+      { href: '/dashboard/obras',    icon: MapPin,  label: 'Obras'            },
+      { href: '/dashboard/importar', icon: Upload,  label: 'Importar Planilha'},
+    ]
+  },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,12 +49,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!loading && !user) router.push('/login')
   }, [user, loading, router])
 
-  // Fecha sidebar ao navegar no mobile
   useEffect(() => { setOpen(false) }, [pathname])
 
   if (loading) return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin"/>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="w-8 h-8 border-2 border-gray-700 border-t-white rounded-full animate-spin"/>
     </div>
   )
 
@@ -48,62 +62,93 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const nome = user.user_metadata?.full_name || user.email || 'Usuário'
   const ini  = nome.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
 
-  const Sidebar = () => (
-    <aside className="w-56 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col flex-shrink-0 h-full">
-      <div className="h-14 flex items-center gap-3 px-4 border-b border-[var(--border)]">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Layers size={16} color="white"/>
+  const SidebarContent = () => (
+    <aside style={{
+      width: 200, background: 'var(--bg-primary)', borderRight: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', height: '100%', flexShrink: 0,
+    }}>
+      {/* Logo */}
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 30, height: 30, background: 'var(--text-primary)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bg-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
-        <div className="flex-1">
-          <p className="text-[var(--text-primary)] font-bold text-sm leading-none">ObraTrack</p>
-          <p className="text-[var(--text-muted)] text-xs">Pro v2</p>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-.3px', lineHeight: 1 }}>ObraTrack</p>
+          <p style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em', marginTop: 2 }}>Pro</p>
         </div>
-        <button onClick={() => setOpen(false)} className="md:hidden text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-          <X size={18}/>
+        <button onClick={() => setOpen(false)} className="md:hidden" style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <X size={16}/>
         </button>
       </div>
 
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {nav.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
-          return (
-            <Link key={href} href={href}
-              className={clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                active
-                  ? 'bg-blue-500/15 text-blue-400'
-                  : 'text-[var(--text-muted)] hover:text-gray-200 hover:bg-[var(--bg-card)]'
-              )}>
-              <Icon size={16}/>
-              {label}
-              {active && <ChevronRight size={12} className="ml-auto"/>}
-            </Link>
-          )
-        })}
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: '8px 8px', overflowY: 'auto' }}>
+        {navGroups.map(({ label, items }) => (
+          <div key={label} style={{ marginBottom: 4 }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '8px 10px 4px', opacity: 0.5 }}>{label}</p>
+            {items.map(({ href, icon: Icon, label: itemLabel }) => {
+              const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+              return (
+                <Link key={href} href={href} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '7px 10px', borderRadius: 8,
+                  fontSize: 12, fontWeight: active ? 600 : 500,
+                  color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+                  background: active ? 'var(--bg-card)' : 'transparent',
+                  textDecoration: 'none', transition: 'all .15s',
+                  marginBottom: 1,
+                }}>
+                  <Icon size={14} style={{ flexShrink: 0 }}/>
+                  <span style={{ flex: 1 }}>{itemLabel}</span>
+                  {active && <div style={{ width: 3, height: 14, background: 'var(--text-primary)', borderRadius: 2 }}/>}
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
 
-      <div className="border-t border-[var(--border)] p-3">
-        <div className="flex items-center gap-1.5 mb-3 px-1">
-          <Shield size={10} className="text-green-400"/>
-          <span className="text-xs text-green-400 font-medium">Salvo na nuvem</span>
+      {/* Footer */}
+      <div style={{ padding: 10, borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, padding: '0 4px' }}>
+          <Shield size={10} style={{ color: '#4ade80' }}/>
+          <span style={{ fontSize: 9, color: '#4ade80', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em' }}>Salvo na nuvem</span>
         </div>
-        <div className="flex items-center gap-2 mb-2">
+
+        {/* User */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, background: 'var(--bg-card)', marginBottom: 6 }}>
           {user.user_metadata?.avatar_url
-            ? <img src={user.user_metadata.avatar_url} className="w-7 h-7 rounded-full" alt="avatar"/>
-            : <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">{ini}</div>
+            ? <img src={user.user_metadata.avatar_url} style={{ width: 26, height: 26, borderRadius: '50%' }} alt="avatar"/>
+            : <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--bg-primary)', flexShrink: 0 }}>{ini}</div>
           }
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{nome.split(' ')[0]}</p>
-            <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nome.split(' ')[0]}</p>
+            <p style={{ fontSize: 9, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
           </div>
         </div>
-        <button onClick={toggle}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors mb-1">
+
+        {/* Toggle tema */}
+        <button onClick={toggle} style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 8px', borderRadius: 8, fontSize: 11, fontWeight: 500,
+          color: 'var(--text-muted)', background: 'none', border: 'none',
+          cursor: 'pointer', marginBottom: 2, transition: 'all .15s',
+        }}
+        onMouseOver={e => (e.currentTarget.style.background = 'var(--bg-card)')}
+        onMouseOut={e => (e.currentTarget.style.background = 'none')}>
           {theme === 'dark' ? <Sun size={13}/> : <Moon size={13}/>}
           {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
         </button>
-        <button onClick={signOut}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors">
+
+        {/* Sair */}
+        <button onClick={signOut} style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 8px', borderRadius: 8, fontSize: 11, fontWeight: 500,
+          color: 'var(--text-muted)', background: 'none', border: 'none',
+          cursor: 'pointer', transition: 'all .15s',
+        }}
+        onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#f87171' }}
+        onMouseOut={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}>
           <LogOut size={13}/> Sair
         </button>
       </div>
@@ -111,47 +156,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden">
+    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-primary)', overflow: 'hidden' }}>
 
-      {/* Sidebar desktop — sempre visível em md+ */}
+      {/* Sidebar desktop */}
       <div className="hidden md:flex">
-        <Sidebar />
+        <SidebarContent />
       </div>
 
       {/* Overlay mobile */}
       {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 z-40 md:hidden" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setOpen(false)}/>
       )}
 
-      {/* Sidebar mobile — desliza da esquerda */}
-      <div className={clsx(
-        'fixed inset-y-0 left-0 z-50 flex md:hidden transition-transform duration-300',
-        open ? 'translate-x-0' : '-translate-x-full'
-      )}>
-        <Sidebar />
+      {/* Sidebar mobile */}
+      <div className={clsx('fixed inset-y-0 left-0 z-50 flex md:hidden transition-transform duration-300', open ? 'translate-x-0' : '-translate-x-full')}>
+        <SidebarContent />
       </div>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto flex flex-col">
+      <main style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
         {/* Topbar mobile */}
-        <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-secondary)] sticky top-0 z-30">
-          <button onClick={() => setOpen(true)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            <Menu size={22}/>
+        <div className="md:hidden" style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+          height: 52, borderBottom: '1px solid var(--border)',
+          background: 'var(--bg-primary)', position: 'sticky', top: 0, zIndex: 30,
+        }}>
+          <button onClick={() => setOpen(true)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>
+            <Menu size={20}/>
           </button>
-          <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-            <Layers size={13} color="white"/>
+          <div style={{ width: 24, height: 24, background: 'var(--text-primary)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bg-primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           </div>
-          <span className="text-[var(--text-primary)] font-bold text-sm">ObraTrack Pro</span>
-          <button onClick={toggle} className="ml-auto w-8 h-8 rounded-full bg-[var(--bg-card)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-            {theme === 'dark' ? <Sun size={15}/> : <Moon size={15}/>}
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-.3px' }}>ObraTrack Pro</span>
+          <button onClick={toggle} style={{ marginLeft: 'auto', width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+            {theme === 'dark' ? <Sun size={14}/> : <Moon size={14}/>}
           </button>
         </div>
 
-        {/* Conteúdo */}
-        <div className="flex-1">
+        <div style={{ flex: 1 }}>
           {children}
         </div>
       </main>
