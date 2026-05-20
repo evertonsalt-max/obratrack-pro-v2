@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { setOpen(false) }, [pathname])
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin"/>
     </div>
   )
@@ -49,16 +49,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const ini  = nome.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
 
   const Sidebar = () => (
-    <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col flex-shrink-0 h-full">
-      <div className="h-14 flex items-center gap-3 px-4 border-b border-gray-800">
+    <aside className="w-56 bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col flex-shrink-0 h-full">
+      <div className="h-14 flex items-center gap-3 px-4 border-b border-[var(--border)]">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
           <Layers size={16} color="white"/>
         </div>
         <div className="flex-1">
-          <p className="text-white font-bold text-sm leading-none">ObraTrack</p>
-          <p className="text-gray-500 text-xs">Pro v2</p>
+          <p className="text-[var(--text-primary)] font-bold text-sm leading-none">ObraTrack</p>
+          <p className="text-[var(--text-muted)] text-xs">Pro v2</p>
         </div>
-        <button onClick={() => setOpen(false)} className="md:hidden text-gray-400 hover:text-white">
+        <button onClick={() => setOpen(false)} className="md:hidden text-[var(--text-muted)] hover:text-[var(--text-primary)]">
           <X size={18}/>
         </button>
       </div>
@@ -72,7 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 active
                   ? 'bg-blue-500/15 text-blue-400'
-                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                  : 'text-[var(--text-muted)] hover:text-gray-200 hover:bg-[var(--bg-card)]'
               )}>
               <Icon size={16}/>
               {label}
@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })}
       </nav>
 
-      <div className="border-t border-gray-800 p-3">
+      <div className="border-t border-[var(--border)] p-3">
         <div className="flex items-center gap-1.5 mb-3 px-1">
           <Shield size={10} className="text-green-400"/>
           <span className="text-xs text-green-400 font-medium">Salvo na nuvem</span>
@@ -93,17 +93,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             : <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">{ini}</div>
           }
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white truncate">{nome.split(' ')[0]}</p>
-            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{nome.split(' ')[0]}</p>
+            <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
           </div>
         </div>
         <button onClick={toggle}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors mb-1">
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-yellow-400 hover:bg-yellow-500/10 transition-colors mb-1">
           {theme === 'dark' ? <Sun size={13}/> : <Moon size={13}/>}
           {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
         </button>
         <button onClick={signOut}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-[var(--text-muted)] hover:text-red-400 hover:bg-red-500/10 transition-colors">
           <LogOut size={13}/> Sair
         </button>
       </div>
@@ -111,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden">
+    <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden">
 
       {/* Sidebar desktop — sempre visível em md+ */}
       <div className="hidden md:flex">
@@ -137,15 +137,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         {/* Topbar mobile */}
-        <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-gray-800 bg-gray-900 sticky top-0 z-30">
-          <button onClick={() => setOpen(true)} className="text-gray-400 hover:text-white">
+        <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-[var(--border)] bg-[var(--bg-secondary)] sticky top-0 z-30">
+          <button onClick={() => setOpen(true)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             <Menu size={22}/>
           </button>
           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
             <Layers size={13} color="white"/>
           </div>
-          <span className="text-white font-bold text-sm">ObraTrack Pro</span>
-          <button onClick={toggle} className="ml-auto w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white">
+          <span className="text-[var(--text-primary)] font-bold text-sm">ObraTrack Pro</span>
+          <button onClick={toggle} className="ml-auto w-8 h-8 rounded-full bg-[var(--bg-card)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)]">
             {theme === 'dark' ? <Sun size={15}/> : <Moon size={15}/>}
           </button>
         </div>

@@ -42,13 +42,13 @@ export default function DashboardPage() {
   })
 
   return (
-    <div style={{ background: '#0d0d14', minHeight: '100vh' }} className="pb-6">
+    <div style={{ background: 'var(--bg-primary)', minHeight: '100vh' }} className="pb-6">
 
       {/* Hero header */}
-      <div style={{ padding: '20px 20px 16px', background: '#0d0d14' }}>
-        <p style={{ fontSize: 12, color: '#6b7280', marginBottom: 2 }}>{saudacao()},</p>
-        <p style={{ fontSize: 22, fontWeight: 800, color: '#fff', marginBottom: 10 }}>Dashboard</p>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#1a1a2e', border: '1px solid #2a2a3e', borderRadius: 20, padding: '4px 12px', fontSize: 11, color: '#8b8fa8' }}>
+      <div style={{ padding: '20px 20px 16px', background: 'var(--bg-primary)' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{saudacao()},</p>
+        <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>Dashboard</p>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--bg-card)', border: '1px solid #2a2a3e', borderRadius: 20, padding: '4px 12px', fontSize: 11, color: '#8b8fa8' }}>
           {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
         </span>
       </div>
@@ -58,7 +58,7 @@ export default function DashboardPage() {
         <div style={{ position: 'absolute', top: -24, right: -24, width: 90, height: 90, background: '#7c6fff', borderRadius: '50%' }}/>
         <div style={{ position: 'absolute', bottom: -32, right: 24, width: 70, height: 70, background: '#4a3ee0', borderRadius: '50%' }}/>
         <p style={{ fontSize: 11, color: '#c4b8ff', fontWeight: 500, marginBottom: 4, position: 'relative', zIndex: 1 }}>Total bruto acumulado</p>
-        <p style={{ fontSize: 30, fontWeight: 800, color: '#fff', position: 'relative', zIndex: 1 }}>{fmtR$(bruto)}</p>
+        <p style={{ fontSize: 30, fontWeight: 800, color: 'var(--text-primary)', position: 'relative', zIndex: 1 }}>{fmtR$(bruto)}</p>
         <p style={{ fontSize: 11, color: '#c4b8ff', marginTop: 2, marginBottom: 14, position: 'relative', zIndex: 1 }}>{ativos} funcionários ativos</p>
         <div style={{ display: 'flex', gap: 8, position: 'relative', zIndex: 1 }}>
           {[
@@ -68,7 +68,7 @@ export default function DashboardPage() {
           ].map(({ label, val }) => (
             <div key={label} style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 12, padding: '8px 10px', flex: 1 }}>
               <p style={{ fontSize: 9, color: '#c4b8ff', marginBottom: 2 }}>{label}</p>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{val}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{val}</p>
             </div>
           ))}
         </div>
@@ -84,15 +84,15 @@ export default function DashboardPage() {
         ].map(({ label, val, bg, ibg, ic, icon }) => (
           <div key={label} style={{ background: bg, borderRadius: 16, padding: 14 }}>
             <div style={{ width: 32, height: 32, background: ibg, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, marginBottom: 8 }}>{icon}</div>
-            <p style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{val}</p>
-            <p style={{ fontSize: 10, color: '#6b7280', fontWeight: 500, marginTop: 2 }}>{label}</p>
+            <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{val}</p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, marginTop: 2 }}>{label}</p>
           </div>
         ))}
       </div>
 
       {/* Gráfico 7 dias */}
-      <div style={{ margin: '0 16px 16px', background: '#1a1a2e', borderRadius: 16, padding: 16 }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Diárias — últimos 7 dias</p>
+      <div style={{ margin: '0 16px 16px', background: 'var(--bg-card)', borderRadius: 16, padding: 16 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Diárias — últimos 7 dias</p>
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={dias7} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
             <defs>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
             <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e"/>
             <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false}/>
-            <Tooltip contentStyle={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 8, fontSize: 11 }}/>
+            <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid #2a2a3e', borderRadius: 8, fontSize: 11 }}/>
             <Area type="monotone" dataKey="Diárias" stroke="#5b4fff" fill="url(#gV)" strokeWidth={2}/>
           </AreaChart>
         </ResponsiveContainer>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
       {/* Acesso rápido */}
       <div style={{ padding: '0 16px' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Acesso rápido</p>
+        <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>Acesso rápido</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[
             { href: '/dashboard/horarios',  icon: '🕐', label: 'Registrar horário',   sub: 'Lançar jornada de hoje',        badge: 'Hoje',  bc: '#1e3a6e', bt: '#60a5fa' },
@@ -120,11 +120,11 @@ export default function DashboardPage() {
             { href: '/dashboard/relatorios',icon: '📊', label: 'Relatórios',          sub: 'Ver resumo por funcionário',     badge: '5 abas',bc: '#2f1f00', bt: '#fbbf24' },
             { href: '/dashboard/pagamentos',icon: '💰', label: 'Pagamentos',          sub: fmtR$(aberto) + ' em aberto',    badge: aberto > 0 ? '!' : 'OK', bc: aberto > 0 ? '#2f0a0a' : '#0a2e1a', bt: aberto > 0 ? '#f87171' : '#34d399' },
           ].map(({ href, icon, label, sub, badge, bc, bt }) => (
-            <Link key={href} href={href} style={{ background: '#1a1a2e', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, background: '#13131f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
+            <Link key={href} href={href} style={{ background: 'var(--bg-card)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: 0 }}>{label}</p>
-                <p style={{ fontSize: 10, color: '#6b7280', margin: '2px 0 0' }}>{sub}</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{label}</p>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: '2px 0 0' }}>{sub}</p>
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20, background: bc, color: bt, flexShrink: 0 }}>{badge}</span>
             </Link>
@@ -134,17 +134,17 @@ export default function DashboardPage() {
 
       {/* Pendentes */}
       {summary.filter(s => (s.saldo||0) > 0).length > 0 && (
-        <div style={{ margin: '16px 16px 0', background: '#1a1a2e', borderRadius: 16, padding: 16 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Saldos pendentes</p>
+        <div style={{ margin: '16px 16px 0', background: 'var(--bg-card)', borderRadius: 16, padding: 16 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>Saldos pendentes</p>
           {summary.filter(s => (s.saldo||0) > 0).slice(0, 4).map(s => (
-            <div key={s.employee.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid #2a2a3e' }}>
+            <div key={s.employee.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#5b4fff22', border: '1px solid #5b4fff44', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#7c6fff' }}>
                   {(s.employee.apelido || s.employee.nome).slice(0,2).toUpperCase()}
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: 0 }}>{s.employee.apelido || s.employee.nome.split(' ')[0]}</p>
-                  <p style={{ fontSize: 10, color: '#6b7280', margin: 0 }}>Bruto: {fmtR$(s.bruto||0)}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{s.employee.apelido || s.employee.nome.split(' ')[0]}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0 }}>Bruto: {fmtR$(s.bruto||0)}</p>
                 </div>
               </div>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', background: '#2f0a0a', padding: '4px 10px', borderRadius: 20 }}>{fmtR$(s.saldo||0)}</span>
