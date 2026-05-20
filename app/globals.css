@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary:   #0d0d14;
+  --bg-secondary: #13131f;
+  --bg-card:      #1a1a2e;
+  --bg-hover:     #1e1e30;
+  --border:       #1e1e30;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted:   #6b7280;
+  --accent:       #5b4fff;
+  --accent-light: #7c6fff;
+}
+html.light {
+  --bg-primary:   #f4f4f8;
+  --bg-secondary: #ffffff;
+  --bg-card:      #ffffff;
+  --bg-hover:     #f0f0f5;
+  --border:       #e2e2ef;
+  --text-primary: #0f0f1a;
+  --text-secondary: #4a4a6a;
+  --text-muted:   #9090aa;
+  --accent:       #5b4fff;
+  --accent-light: #7c6fff;
+}
+
+
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
 
 @layer base {

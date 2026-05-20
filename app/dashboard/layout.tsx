@@ -7,8 +7,9 @@ import { useAuth }    from '@/hooks/useAuth'
 import {
   LayoutDashboard, Users, Clock, DollarSign,
   BarChart2, Mic, MapPin, Upload,
-  Layers, LogOut, ChevronRight, Shield, Menu, X
+  Layers, LogOut, ChevronRight, Shield, Menu, X, Sun, Moon
 } from 'lucide-react'
+import { useTheme } from '@/hooks/useTheme'
 import clsx from 'clsx'
 
 const nav = [
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router   = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const { theme, toggle } = useTheme()
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
@@ -138,6 +140,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Layers size={13} color="white"/>
           </div>
           <span className="text-white font-bold text-sm">ObraTrack Pro</span>
+          <button onClick={toggle} className="ml-auto w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white">
+            {theme === 'dark' ? <Sun size={15}/> : <Moon size={15}/>}
+          </button>
         </div>
 
         {/* Conteúdo */}
