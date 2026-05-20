@@ -117,8 +117,8 @@ export default function DashboardPage() {
           {[
             { href: '/dashboard/horarios',  icon: '🕐', label: 'Registrar horário',   sub: 'Lançar jornada de hoje',        badge: 'Hoje',  bc: '#1e3a6e', bt: '#60a5fa' },
             { href: '/dashboard/audio',     icon: '🎙️', label: 'Registro por áudio', sub: 'Usar inteligência artificial',   badge: 'IA',    bc: '#0a2e1a', bt: '#34d399' },
-            { href: '/dashboard/relatorios',icon: '📊', label: 'Relatórios',          sub: 'Ver resumo por funcionário',     badge: '5 abas',bc: '#2f1f00', bt: '#fbbf24' },
-            { href: '/dashboard/pagamentos',icon: '💰', label: 'Pagamentos',          sub: fmtR$(aberto) + ' em aberto',    badge: aberto > 0 ? '!' : 'OK', bc: aberto > 0 ? '#2f0a0a' : '#0a2e1a', bt: aberto > 0 ? '#f87171' : '#34d399' },
+            { href: '/dashboard/relatorios',icon: '📊', label: 'Relatórios',          sub: 'Ver resumo por funcionário',     badge: '5 abas',bc: 'var(--stat-amber-ibg)', bt: '#fbbf24' },
+            { href: '/dashboard/pagamentos',icon: '💰', label: 'Pagamentos',          sub: fmtR$(aberto) + ' em aberto',    badge: aberto > 0 ? '!' : 'OK', bc: aberto > 0 ? 'var(--stat-red-ibg)' : '#0a2e1a', bt: aberto > 0 ? '#f87171' : '#34d399' },
           ].map(({ href, icon, label, sub, badge, bc, bt }) => (
             <Link key={href} href={href} style={{ background: 'var(--bg-card)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                   <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0 }}>Bruto: {fmtR$(s.bruto||0)}</p>
                 </div>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', background: '#2f0a0a', padding: '4px 10px', borderRadius: 20 }}>{fmtR$(s.saldo||0)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', background: 'var(--stat-red-ibg)', padding: '4px 10px', borderRadius: 20 }}>{fmtR$(s.saldo||0)}</span>
             </div>
           ))}
         </div>
