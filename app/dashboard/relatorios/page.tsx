@@ -8,7 +8,6 @@ import * as XLSX from 'xlsx'
 import { MESES, JORNADA_CONFIG } from '@/types'
 import { Download, Printer, Filter, TrendingUp, Users, DollarSign, Shield, FileText, AlertCircle } from 'lucide-react'
 import { TabelaDetalhadaFuncionario } from '@/components/relatorios/TabelaDetalhadaFuncionario'
-import { TabelaDetalhadaFuncionario } from '@/components/relatorios/TabelaDetalhadaFuncionario'
 
 const fmtR$ = (v: any) => { const n = Number(v); return 'R$ ' + (isNaN(n) ? 0 : n).toLocaleString('pt-BR',{minimumFractionDigits:2}) }
 const fmtBR = (d: string) => { try{return format(new Date(d+'T12:00:00'),'dd/MM/yy')}catch{return d} }
