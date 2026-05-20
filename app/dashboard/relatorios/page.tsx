@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx'
 import { MESES, JORNADA_CONFIG } from '@/types'
 import { Download, Printer, Filter, TrendingUp, Users, DollarSign, Shield, FileText, AlertCircle } from 'lucide-react'
 import { TabelaDetalhadaFuncionario } from '@/components/relatorios/TabelaDetalhadaFuncionario'
+import { RankingProdutividade } from '@/components/relatorios/RankingProdutividade'
 
 const fmtR$ = (v: any) => { const n = Number(v); return 'R$ ' + (isNaN(n) ? 0 : n).toLocaleString('pt-BR',{minimumFractionDigits:2}) }
 const fmtBR = (d: string) => { try{return format(new Date(d+'T12:00:00'),'dd/MM/yy')}catch{return d} }
@@ -160,6 +161,7 @@ export default function RelatoriosPage() {
             {jornadaData.length>0&&(<div className="card"><h3 className="text-white font-bold mb-4">Por Jornada</h3><ResponsiveContainer width="100%" height={180}><PieChart><Pie data={jornadaData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} labelLine={false} fontSize={10}>{jornadaData.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Pie><Tooltip contentStyle={{background:'#111827',border:'1px solid #1f2937',borderRadius:'8px',fontSize:'12px'}}/></PieChart></ResponsiveContainer></div>)}
           </div>
           {barData.length>0&&(<div className="card"><h3 className="text-white font-bold mb-4">Por Funcionário</h3><ResponsiveContainer width="100%" height={180}><BarChart data={barData}><CartesianGrid strokeDasharray="3 3" stroke="#1f2937"/><XAxis dataKey="name" tick={{fill:'#6b7280',fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:'#6b7280',fontSize:11}} axisLine={false} tickLine={false}/><Tooltip contentStyle={{background:'#111827',border:'1px solid #1f2937',borderRadius:'8px',fontSize:'12px'}}/><Legend wrapperStyle={{fontSize:'12px',color:'#6b7280'}}/><Bar dataKey="Bruto" fill="#3b82f6" radius={[4,4,0,0]}/><Bar dataKey="Descontos" fill="#f59e0b" radius={[4,4,0,0]}/><Bar dataKey="Pago" fill="#22c55e" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div>)}
+          <RankingProdutividade summary={summary} />
           <div className="card"><h3 className="text-white font-bold mb-4">Resumo Geral</h3>
             <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-gray-800">{['Funcionário','Dias','Faltas','H.Outro','Bruto','Descontos','Líquido','Pago','Saldo','INSS','FGTS'].map(h=><th key={h} className="text-left py-3 px-3 text-xs font-semibold text-gray-400 uppercase whitespace-nowrap">{h}</th>)}</tr></thead>
               <tbody>{summary.map((s,i)=><tr key={s.employee.id} className={`border-b border-gray-800 hover:bg-gray-800/50 ${i%2===1?'bg-gray-800/20':''}`}>
