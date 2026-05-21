@@ -101,7 +101,7 @@ const ACCENT = [20, 20, 20] as [number,number,number]
 const LIGHT = [245, 245, 245] as [number,number,number]
 
 
-function addImg(pdf: jsPDF, b64: string, x: number, y: number, w: number, h: number) {
+function addImg(pdf: jsPDF, b64: string, x: number, y: number, w: number, h: number, fit: boolean = true) {
   if (!b64 || b64.length < 100) return
   try {
     let fmt = 'JPEG'
@@ -110,8 +110,31 @@ function addImg(pdf: jsPDF, b64: string, x: number, y: number, w: number, h: num
     else if (b64.includes('data:image/jpeg') || b64.includes('data:image/jpg')) { fmt = 'JPEG'; data = b64.split(',')[1] }
     else if (b64.includes('data:image/webp')) { fmt = 'JPEG'; data = b64.split(',')[1] }
     else if (b64.includes(',')) { data = b64.split(',')[1] }
-    pdf.addImage(data, fmt, x, y, w, h)
-  } catch(_) {}
+    if (fit) {
+      // Detecta proporcao real da imagem
+      const img = new Image()
+      img.src = b64
+      const ratio = img.naturalWidth > 0 ? img.naturalWidth / img.naturalHeight : w / h
+      const targetRatio = w / h
+      let fw = w, fh = h, fx = x, fy = y
+      if (ratio > targetRatio) {
+        fh = w / ratio
+        fy = y + (h - fh) / 2
+      } else {
+        fw = h * ratio
+        fx = x + (w - fw) / 2
+      }
+      pdf.addImage(data, fmt, fx, fy, fw, fh)
+    } else {
+      pdf.addImage(data, fmt, x, y, w, h)
+    }
+  } catch(_) {
+    try {
+      const fmt2 = b64.includes('data:image/png') ? 'PNG' : 'JPEG'
+      const data2 = b64.includes(',') ? b64.split(',')[1] : b64
+      pdf.addImage(data2, fmt2, x, y, w, h)
+    } catch(_) {}
+  }
 }
 
 function addWatermark(pdf: jsPDF, texto: string, imgBase64?: string) {
