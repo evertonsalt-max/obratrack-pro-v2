@@ -628,6 +628,29 @@ export async function gerarPDFPremium(p: PDFParams) {
     y += 28
   }
 
+  // Fotos ferramentas
+  if (p.fotos_ferramentas && p.fotos_ferramentas.length > 0) {
+    const ff = p.fotos_ferramentas.filter((f:any) => f.src)
+    if (ff.length > 0) {
+      if (y > 200) { y = newPage('Ferramentas e Produtos'); y = sectionTitle(pdf, 'Ferramentas e Produtos', y) }
+      const cols = Math.min(ff.length, 4)
+      const fw2 = (W-2*M-(cols-1)*3)/cols
+      const fh2 = 35
+      ff.forEach((f:any, i:number) => {
+        const col = i % cols
+        const row = Math.floor(i / cols)
+        const fx = M + col*(fw2+3)
+        const fy = y + row*(fh2+8)
+        addImg(pdf, f.src, fx, fy, fw2, fh2)
+        if (f.legenda) {
+          pdf.setFontSize(6.5); pdf.setFont('helvetica','normal'); pdf.setTextColor(80,80,80)
+          pdf.text(f.legenda, fx+fw2/2, fy+fh2+5, { align:'center' })
+        }
+      })
+      y += Math.ceil(ff.length/cols)*(fh2+8) + 4
+    }
+  }
+
   // ═══════════════════════════════════════════════════════
   // PÁGINA — PROPOSTA DE MATERIAIS
   // ═══════════════════════════════════════════════════════
@@ -855,13 +878,13 @@ export async function gerarPDFPremium(p: PDFParams) {
   // PÁGINA FINAL — PORTFÓLIO / REFERÊNCIAS
   // ═══════════════════════════════════════════════════════
   if (p.referencias && p.referencias.length > 0) {
-    y = newPage('Portfólio e Referências')
-    y = sectionTitle(pdf, 'Clientes Atendidos — Referências', y)
+    y = newPage('Portfolio e Referencias')
+    y = sectionTitle(pdf, 'Clientes Atendidos — Referencias', y)
 
     autoTable(pdf, {
       startY: y,
       head: [['Empreendimento / Cliente', 'Contato', 'Telefone']],
-      body: p.referencias.map(r => [r.empreendimento, r.contato, r.telefone]),
+      body: p.referencias.map((r:any) => [r.empreendimento, r.contato, r.telefone]),
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [30,30,30], textColor: 255, fontStyle: 'bold' },
       columnStyles: {
