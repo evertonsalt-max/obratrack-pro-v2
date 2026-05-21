@@ -100,6 +100,25 @@ const M = 14
 const ACCENT = [20, 20, 20] as [number,number,number]
 const LIGHT = [245, 245, 245] as [number,number,number]
 
+
+function imgFormat(b64: string): { fmt: string; data: string } {
+  if (b64.startsWith('data:image/png')) return { fmt: 'PNG', data: b64.split(',')[1] }
+  if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return { fmt: 'JPEG', data: b64.split(',')[1] }
+  if (b64.startsWith('data:image/webp')) return { fmt: 'WEBP', data: b64.split(',')[1] }
+  // sem prefixo, assume JPEG
+  return { fmt: 'JPEG', data: b64.includes(',') ? b64.split(',')[1] : b64 }
+}
+
+function addImg(pdf: jsPDF, b64: string, x: number, y: number, w: number, h: number) {
+  if (!b64) return
+  try {
+    const { fmt, data } = imgFormat(b64)
+    pdf.addImage(data, fmt, x, y, w, h)
+  } catch(e) {
+    try { addImg(pdf, b64, x, y, w, h) } catch(_) {}
+  }
+}
+
 function addWatermark(pdf: jsPDF, texto: string, imgBase64?: string) {
   if (imgBase64) {
     try {
@@ -124,7 +143,7 @@ function addHeader(pdf: jsPDF, p: PDFParams, titulo: string, pageNum: number) {
   pdf.setFillColor(...ACCENT)
   pdf.rect(0, 0, W, 16, 'F')
   if (p.logoBase64) {
-    try { pdf.addImage(p.logoBase64, 'PNG', M, 1, 20, 14) } catch(_) {}
+    try { addImg(pdf, p.logoBase64, M, 1, 20, 14) } catch(_) {}
   }
   pdf.setTextColor(255,255,255)
   pdf.setFontSize(9)
@@ -199,7 +218,7 @@ export async function gerarPDFPremium(p: PDFParams) {
 
   // Logo
   if (p.logoBase64) {
-    try { pdf.addImage(p.logoBase64, 'PNG', W/2-28, 8, 56, 36) } catch(_) {}
+    try { addImg(pdf, p.logoBase64, W/2-28, 8, 56, 36) } catch(_) {}
   } else {
     pdf.setTextColor(255,255,255)
     pdf.setFontSize(24)
@@ -227,7 +246,7 @@ export async function gerarPDFPremium(p: PDFParams) {
 
   // Foto capa
   if (p.foto_capa) {
-    try { pdf.addImage(p.foto_capa, 'JPEG', M, 116, W-2*M, 62) } catch(_) {}
+    try { addImg(pdf, p.foto_capa, M, 116, W-2*M, 62) } catch(_) {}
   } else {
     pdf.setFillColor(230,230,230)
     pdf.rect(M, 116, W-2*M, 62, 'F')
@@ -402,7 +421,7 @@ export async function gerarPDFPremium(p: PDFParams) {
       const row = Math.floor(i / cols)
       const fx = M + col*(fw+3)
       const fy = y + row*(fh+10)
-      try { pdf.addImage(f.src, 'JPEG', fx, fy, fw, fh) } catch(_) {}
+      try { addImg(pdf, f.src, fx, fy, fw, fh) } catch(_) {}
       pdf.setFillColor(20,20,20)
       pdf.rect(fx, fy+fh, fw, 8, 'F')
       pdf.setTextColor(255,255,255)
@@ -444,7 +463,7 @@ export async function gerarPDFPremium(p: PDFParams) {
       const desc = pdf.splitTextToSize(pat.descricao, pat.foto ? W-2*M-50 : W-2*M-10)
       pdf.text(desc, M+4, y+13)
       if (pat.foto) {
-        try { pdf.addImage(pat.foto, 'JPEG', W-M-44, y+2, 40, 46) } catch(_) {}
+        try { addImg(pdf, pat.foto, W-M-44, y+2, 40, 46) } catch(_) {}
       }
       y += (pat.foto ? 54 : 22)
     })
