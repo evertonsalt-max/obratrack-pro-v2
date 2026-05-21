@@ -95,7 +95,145 @@ function ImgUpload({ label, src, onFile, legenda, onLegenda, small }: { label:st
   )
 }
 
+function parseLinhas(texto: string): Omit<Item,'id'>[] {
+  return texto.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 2)
+    .map(l => {
+      // Tenta extrair quantidade e unidade do inicio: "10 m² Tinta acrílica"
+      const match = l.match(/^(\d+[.,]?\d*)\s*(m2|m²|m|un|lt|bd|gl|pc|mt|hr|kg|vb)?\s+(.+)/i)
+      if (match) {
+        return {
+          descricao: match[3].trim(),
+          quantidade: parseFloat(match[1].replace(',','.')),
+          unidade: (match[2] || 'vb').replace('m2','m²'),
+          valor_unitario: 0,
+          desconto_pct: 0,
+        }
+      }
+      return { descricao: l, quantidade: 1, unidade: 'vb', valor_unitario: 0, desconto_pct: 0 }
+    })
+}
+
+function ModalImportar({ onClose, onImportar, onAdicionar }: {
+  onClose: () => void
+  onImportar: (items: Omit<Item,'id'>[]) => void
+  onAdicionar: (items: Omit<Item,'id'>[]) => void
+}) {
+  const [texto, setTexto] = useState('')
+  const [parsed, setParsed] = useState<Omit<Item,'id'>[]>([])
+  const [selecionados, setSelecionados] = useState<Set<number>>(new Set())
+  const [step, setStep] = useState<'colar'|'selecionar'>('colar')
+
+  const processar = () => {
+    const linhas = parseLinhas(texto)
+    setParsed(linhas)
+    setSelecionados(new Set(linhas.map((_,i) => i)))
+    setStep('selecionar')
+  }
+
+  const toggleItem = (i: number) => {
+    setSelecionados(prev => {
+      const next = new Set(prev)
+      next.has(i) ? next.delete(i) : next.add(i)
+      return next
+    })
+  }
+
+  const itensSelecionados = parsed.filter((_,i) => selecionados.has(i))
+
+  const IS2 = { background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:8, padding:'8px 10px', fontSize:13, color:'var(--text-primary)', width:'100%' }
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, width:'100%', maxWidth:600, maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid var(--border)' }}>
+          <div>
+            <p style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
+              {step === 'colar' ? 'Importar lista de materiais' : `${parsed.length} itens encontrados`}
+            </p>
+            <p style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+              {step === 'colar' ? 'Cole o texto do Word — cada linha vira um item' : 'Selecione os itens que deseja importar'}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
+        </div>
+
+        {/* Conteúdo */}
+        <div style={{ flex:1, overflow:'auto', padding:'14px 18px' }}>
+          {step === 'colar' ? (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <p style={{ fontSize:12, color:'var(--text-muted)' }}>
+                Cole aqui o texto copiado do Word. Cada linha será interpretada como um item. 
+                Você pode incluir quantidade e unidade no início: <code style={{ background:'var(--bg-hover)', padding:'1px 5px', borderRadius:4, fontSize:11 }}>10 lt Tinta acrílica premium</code>
+              </p>
+              <textarea
+                value={texto}
+                onChange={e => setTexto(e.target.value)}
+                placeholder={"Ex:\n10 lt Tinta acrílica premium\n5 lt Selador acrílico\nMassa corrida PVA\n20 m² Impermeabilizante"}
+                style={{ ...IS2, minHeight:200, resize:'vertical', fontFamily:'monospace', fontSize:12 }}
+                autoFocus
+              />
+              <p style={{ fontSize:11, color:'var(--text-muted)' }}>
+                {texto.split('\n').filter(l=>l.trim().length>2).length} linhas detectadas
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <p style={{ fontSize:12, color:'var(--text-muted)' }}>{selecionados.size} de {parsed.length} selecionados</p>
+                <div style={{ display:'flex', gap:6 }}>
+                  <button onClick={()=>setSelecionados(new Set(parsed.map((_,i)=>i)))} style={{ fontSize:11, padding:'3px 8px', borderRadius:6, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', cursor:'pointer' }}>Selecionar todos</button>
+                  <button onClick={()=>setSelecionados(new Set())} style={{ fontSize:11, padding:'3px 8px', borderRadius:6, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', cursor:'pointer' }}>Limpar seleção</button>
+                </div>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                {parsed.map((item, i) => (
+                  <div key={i} onClick={()=>toggleItem(i)} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, background: selecionados.has(i) ? 'rgba(96,165,250,0.08)' : 'var(--bg-hover)', border: selecionados.has(i) ? '1px solid rgba(96,165,250,0.3)' : '1px solid var(--border)', cursor:'pointer', transition:'all .15s' }}>
+                    <div style={{ width:16, height:16, borderRadius:4, background: selecionados.has(i) ? '#60a5fa' : 'transparent', border: selecionados.has(i) ? '1px solid #60a5fa' : '1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {selecionados.has(i) && <span style={{ color:'#fff', fontSize:10, fontWeight:700 }}>✓</span>}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <p style={{ fontSize:13, color:'var(--text-primary)', margin:0 }}>{item.descricao}</p>
+                      <p style={{ fontSize:11, color:'var(--text-muted)', margin:0 }}>{item.quantidade} {item.unidade}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:'12px 18px', borderTop:'1px solid var(--border)', display:'flex', gap:8, justifyContent:'flex-end' }}>
+          {step === 'colar' ? (
+            <>
+              <button onClick={onClose} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:13 }}>Cancelar</button>
+              <button onClick={processar} disabled={texto.split('\n').filter(l=>l.trim().length>2).length===0} style={{ padding:'7px 16px', borderRadius:8, background:'var(--text-primary)', color:'var(--bg-primary)', border:'none', cursor:'pointer', fontSize:13, fontWeight:600, opacity:texto.trim()?1:0.5 }}>
+                Avançar →
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={()=>setStep('colar')} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:13 }}>← Voltar</button>
+              <button onClick={()=>{onAdicionar(itensSelecionados);onClose()}} disabled={selecionados.size===0} style={{ padding:'7px 14px', borderRadius:8, border:'1px solid var(--border)', background:'none', color:'var(--text-primary)', cursor:'pointer', fontSize:13, opacity:selecionados.size?1:0.5 }}>
+                + Adicionar à lista
+              </button>
+              <button onClick={()=>{onImportar(itensSelecionados);onClose()}} disabled={selecionados.size===0} style={{ padding:'7px 16px', borderRadius:8, background:'var(--text-primary)', color:'var(--bg-primary)', border:'none', cursor:'pointer', fontSize:13, fontWeight:600, opacity:selecionados.size?1:0.5 }}>
+                Substituir lista ({selecionados.size})
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ItemTable({ items, setItems }: { items:Item[]; setItems:React.Dispatch<React.SetStateAction<Item[]>> }) {
+  const [showImportar, setShowImportar] = useState(false)
   const update = useCallback((id:string,k:string,v:any) => setItems(p=>p.map(i=>i.id===id?{...i,[k]:v}:i)),[setItems])
   return (
     <div>
@@ -132,6 +270,9 @@ function ItemTable({ items, setItems }: { items:Item[]; setItems:React.Dispatch<
           <button onClick={()=>setItems(p=>[...p,novoItem()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
             <Plus size={12}/> Adicionar item
           </button>
+          <button onClick={()=>setShowImportar(true)} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#60a5fa', padding:'5px 10px', borderRadius:7, border:'1px solid rgba(96,165,250,0.3)', background:'rgba(96,165,250,0.08)', cursor:'pointer' }}>
+            📋 Importar do Word
+          </button>
           <div style={{ position:'relative' }}>
             <select onChange={e=>{
               const s = MATERIAIS_SUGERIDOS[+e.target.value]
@@ -149,6 +290,13 @@ function ItemTable({ items, setItems }: { items:Item[]; setItems:React.Dispatch<
         </div>
       </div>
     </div>
+    {showImportar && (
+      <ModalImportar
+        onClose={()=>setShowImportar(false)}
+        onImportar={novos=>setItems(novos.map(i=>({...i,id:newId()})))}
+        onAdicionar={novos=>setItems(p=>[...p,...novos.map(i=>({...i,id:newId()}))])}
+      />
+    )}
   )
 }
 
