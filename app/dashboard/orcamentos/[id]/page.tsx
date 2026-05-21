@@ -128,7 +128,7 @@ function ItemTable({ items, setItems }: { items:Item[]; setItems:React.Dispatch<
         </table>
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10, flexWrap:'wrap', gap:8 }}>
-        <div style={{ display:'flex', gap:6' }}>
+        <div style={{ display:'flex', gap:6 }}>
           <button onClick={()=>setItems(p=>[...p,novoItem()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
             <Plus size={12}/> Adicionar item
           </button>
