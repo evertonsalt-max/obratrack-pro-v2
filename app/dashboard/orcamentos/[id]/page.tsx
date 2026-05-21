@@ -12,34 +12,55 @@ const supabase = createClient(
 
 const fmtR$ = (v: number) => 'R$ ' + (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})
 
-interface Item { id: string; descricao: string; quantidade: number; unidade: string; valor_unitario: number; desconto_pct: number }
-interface Secao { id: string; titulo: string; subtitulo: string; area: string; etapas: string[]; valor_mao_obra: number; obs: string }
-interface Patologia { id: string; nome: string; descricao: string; foto: string }
-interface Referencia { id: string; empreendimento: string; contato: string; telefone: string }
+interface Item { id:string; descricao:string; quantidade:number; unidade:string; valor_unitario:number; desconto_pct:number }
+interface Secao { id:string; titulo:string; subtitulo:string; area:string; etapas:string[]; valor_mao_obra:number; obs:string }
+interface Patologia { id:string; nome:string; descricao:string; foto:string }
+interface Referencia { id:string; empreendimento:string; contato:string; telefone:string }
+interface FotoObra { id:string; src:string; legenda:string }
 
 const newId = () => Math.random().toString(36).slice(2)
-const novoItem = (): Item => ({ id: newId(), descricao: '', quantidade: 1, unidade: 'vb', valor_unitario: 0, desconto_pct: 0 })
-const novaSecao = (): Secao => ({ id: newId(), titulo: '', subtitulo: '', area: '', etapas: [''], valor_mao_obra: 0, obs: '' })
-const novaPatologia = (): Patologia => ({ id: newId(), nome: '', descricao: '', foto: '' })
-const novaRef = (): Referencia => ({ id: newId(), empreendimento: '', contato: '', telefone: '' })
+const novoItem = (): Item => ({ id:newId(), descricao:'', quantidade:1, unidade:'vb', valor_unitario:0, desconto_pct:0 })
+const novaSecao = (): Secao => ({ id:newId(), titulo:'', subtitulo:'', area:'', etapas:[''], valor_mao_obra:0, obs:'' })
+const novaPatologia = (): Patologia => ({ id:newId(), nome:'', descricao:'', foto:'' })
+const novaRef = (): Referencia => ({ id:newId(), empreendimento:'', contato:'', telefone:'' })
+const novaFoto = (): FotoObra => ({ id:newId(), src:'', legenda:'' })
 const calcItem = (i: Item) => i.quantidade * i.valor_unitario * (1 - i.desconto_pct / 100)
 
+// Materiais pré-sugeridos baseados no orçamento de referência
+const MATERIAIS_SUGERIDOS: Omit<Item,'id'>[] = [
+  { descricao:'Massa corrida PVA – paredes internas', quantidade:0, unidade:'gl', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Selador acrílico – fachada', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Tinta acrílica premium – cor a definir', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Tinta acrílica semibrilho – áreas molhadas', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Fundo preparador de paredes', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Impermeabilizante acrílico flexível', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Argamassa polimérica – rejunte e vedação', quantidade:0, unidade:'kg', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Manta asfáltica 4mm – impermeabilização', quantidade:0, unidade:'m²', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Verniz maritimo – madeiras externas', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Esmalte sintético – grades e metais', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Lixa d\'água – preparação de superfície', quantidade:0, unidade:'pc', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Fita crepe – proteção e acabamento', quantidade:0, unidade:'un', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Rolo de lã – aplicação de tinta', quantidade:0, unidade:'un', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Primer epóxi – pisos e garagens', quantidade:0, unidade:'lt', valor_unitario:0, desconto_pct:0 },
+  { descricao:'Textura acrílica – fachada e muros', quantidade:0, unidade:'kg', valor_unitario:0, desconto_pct:0 },
+]
+
 const defaultData = {
-  numero: 'ORC-001', status: 'pendente',
-  empresa_nome: 'Nascimento Pinturas', empresa_cnpj: '10.212.424/0001-73',
-  empresa_endereco: 'Rua Mauri Alcides Scussel nº 46 – Bento Gonçalves - RS',
-  empresa_telefone: '(54) 99704-1323', empresa_whatsapp: '(54) 99704-1323',
-  empresa_email: '', empresa_instagram: '',
-  empresa_responsavel: 'Gabriel Nascimento', empresa_engenheiro: 'Vinicius Pandini',
-  empresa_crea: 'RS 254904', empresa_experiencia: 'mais de 20 anos',
-  empresa_apresentacao: 'A Nascimento Pinturas é especializada em pinturas prediais com mais de 20 anos de experiência em Bento Gonçalves e região. Contamos com equipe própria, qualificada e registrada, atuando de forma totalmente legalizada e em conformidade com a CLT e as exigências do Ministério do Trabalho.',
-  cliente_nome: '', cliente_obra: '', cliente_endereco: '', cliente_telefone: '', cliente_email: '', cliente_cpf_cnpj: '',
-  data_orcamento: new Date().toISOString().split('T')[0], cidade_data: 'Bento Gonçalves',
-  validade_dias: 30, prazo_execucao: '3 (três) meses',
-  garantia_tinta: 'Garantia de até 8 anos conforme ficha técnica dos produtos utilizados.',
-  garantia_execucao: 'Garantia vinculada à aplicação correta do número de demãos determinadas em contrato.',
-  forma_pagamento: 'Parcelamento em até 20 (vinte) vezes em parcelas iguais com a primeira no início da obra.',
-  num_parcelas: 20, valor_entrada: 0, num_unidades: 0, observacoes: '',
+  numero:'ORC-001', status:'pendente',
+  empresa_nome:'Nascimento Pinturas', empresa_cnpj:'10.212.424/0001-73',
+  empresa_endereco:'Rua Mauri Alcides Scussel nº 46 – Bento Gonçalves - RS',
+  empresa_telefone:'(54) 99704-1323', empresa_whatsapp:'(54) 99704-1323',
+  empresa_email:'', empresa_instagram:'',
+  empresa_responsavel:'Gabriel Nascimento', empresa_engenheiro:'Vinicius Pandini',
+  empresa_crea:'RS 254904', empresa_experiencia:'mais de 20 anos',
+  empresa_apresentacao:'A Nascimento Pinturas é especializada em pinturas prediais com mais de 20 anos de experiência em Bento Gonçalves e região. Contamos com equipe própria, qualificada e registrada, atuando de forma totalmente legalizada e em conformidade com a CLT e as exigências do Ministério do Trabalho.',
+  cliente_nome:'', cliente_obra:'', cliente_endereco:'', cliente_telefone:'', cliente_email:'', cliente_cpf_cnpj:'',
+  data_orcamento:new Date().toISOString().split('T')[0], cidade_data:'Bento Gonçalves',
+  validade_dias:30, prazo_execucao:'3 (três) meses',
+  garantia_tinta:'Garantia de até 8 anos conforme ficha técnica dos produtos utilizados.',
+  garantia_execucao:'Garantia vinculada à aplicação correta do número de demãos determinadas em contrato.',
+  forma_pagamento:'Parcelamento em até 20 (vinte) vezes em parcelas iguais com a primeira no início da obra.',
+  num_parcelas:20, valor_entrada:0, num_unidades:0, observacoes:'',
 }
 
 const IS = { background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:8, padding:'8px 10px', fontSize:13, color:'var(--text-primary)', width:'100%' }
@@ -47,32 +68,35 @@ const LS = { fontSize:11, color:'var(--text-muted)', fontWeight:500 as const, te
 const FS = { display:'flex', flexDirection:'column' as const, gap:4 }
 const TA = { ...IS, resize:'vertical' as const, minHeight:72 }
 
-// ── Componentes externos (fora do render) ─────────────────────────────────────
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label:string; children:React.ReactNode }) {
   return <div style={FS}><label style={LS}>{label}</label>{children}</div>
 }
 
-function ImgUpload({ label, src, onFile, legenda, onLegenda }: { label:string; src:string; onFile:(b:string)=>void; legenda?:string; onLegenda?:(v:string)=>void }) {
+function ImgUpload({ label, src, onFile, legenda, onLegenda, small }: { label:string; src:string; onFile:(b:string)=>void; legenda?:string; onLegenda?:(v:string)=>void; small?:boolean }) {
   const ref = useRef<HTMLInputElement>(null)
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
     const r = new FileReader(); r.onload = () => onFile(r.result as string); r.readAsDataURL(f)
   }
+  const h = small ? 56 : 80
   return (
     <div style={FS}>
       <label style={LS}>{label}</label>
-      <div onClick={() => ref.current?.click()} style={{ border:'1px dashed var(--border)', borderRadius:8, padding:12, textAlign:'center', cursor:'pointer', background:'var(--bg-hover)', minHeight:72, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-        {src ? <img src={src} style={{ maxHeight:72, maxWidth:'100%', objectFit:'contain' }} alt=""/> : <span style={{ color:'var(--text-muted)', fontSize:12 }}>🖼 Clique para carregar</span>}
+      <div onClick={() => ref.current?.click()} style={{ border:'1px dashed var(--border)', borderRadius:8, padding:10, textAlign:'center', cursor:'pointer', background:'var(--bg-hover)', minHeight:h, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', position:'relative' }}>
+        {src
+          ? <img src={src} style={{ maxHeight:h, maxWidth:'100%', objectFit:'contain' }} alt=""/>
+          : <span style={{ color:'var(--text-muted)', fontSize:11 }}>🖼 Carregar</span>
+        }
+        {src && <div style={{ position:'absolute', top:4, right:4, background:'rgba(0,0,0,0.5)', borderRadius:4, padding:'1px 5px', fontSize:9, color:'#fff', cursor:'pointer' }} onClick={e=>{e.stopPropagation();onFile('')}}>✕</div>}
       </div>
       <input ref={ref} type="file" accept="image/*" style={{ display:'none' }} onChange={onChange}/>
-      {src && onLegenda && <input value={legenda||''} onChange={e=>onLegenda(e.target.value)} placeholder="Legenda da foto" style={{ ...IS, fontSize:12, marginTop:2 }}/>}
+      {src && onLegenda && <input value={legenda||''} onChange={e=>onLegenda(e.target.value)} placeholder="Legenda" style={{ ...IS, fontSize:11, padding:'5px 8px', marginTop:2 }}/>}
     </div>
   )
 }
 
-function ItemTable({ items, setItems }: { items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
-  const update = useCallback((id:string, k:string, v:any) => setItems(p=>p.map(i=>i.id===id?{...i,[k]:v}:i)), [setItems])
+function ItemTable({ items, setItems }: { items:Item[]; setItems:React.Dispatch<React.SetStateAction<Item[]>> }) {
+  const update = useCallback((id:string,k:string,v:any) => setItems(p=>p.map(i=>i.id===id?{...i,[k]:v}:i)),[setItems])
   return (
     <div>
       <div style={{ overflowX:'auto' }}>
@@ -91,7 +115,7 @@ function ItemTable({ items, setItems }: { items: Item[]; setItems: React.Dispatc
                 <td style={{ padding:'5px 6px', width:65 }}><input type="number" value={item.quantidade} onChange={e=>update(item.id,'quantidade',+e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12, width:65 }}/></td>
                 <td style={{ padding:'5px 6px', width:72 }}>
                   <select value={item.unidade} onChange={e=>update(item.id,'unidade',e.target.value)} style={{ ...IS, padding:'4px 5px', fontSize:12, width:70 }}>
-                    {['vb','m²','m','un','lt','bd','gl','pc','mt','hr','m³'].map(u=><option key={u}>{u}</option>)}
+                    {['vb','m²','m','un','lt','bd','gl','pc','mt','hr','m³','kg'].map(u=><option key={u}>{u}</option>)}
                   </select>
                 </td>
                 <td style={{ padding:'5px 6px', width:100 }}><input type="number" value={item.valor_unitario} onChange={e=>update(item.id,'valor_unitario',+e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12, width:95 }}/></td>
@@ -103,12 +127,24 @@ function ItemTable({ items, setItems }: { items: Item[]; setItems: React.Dispatc
           </tbody>
         </table>
       </div>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
-        <button onClick={()=>setItems(p=>[...p,novoItem()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
-          <Plus size={12}/> Adicionar item
-        </button>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10, flexWrap:'wrap', gap:8 }}>
+        <div style={{ display:'flex', gap:6' }}>
+          <button onClick={()=>setItems(p=>[...p,novoItem()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
+            <Plus size={12}/> Adicionar item
+          </button>
+          <div style={{ position:'relative' }}>
+            <select onChange={e=>{
+              const s = MATERIAIS_SUGERIDOS[+e.target.value]
+              if (s) setItems(p=>[...p,{...s,id:newId()}])
+              e.target.value = ''
+            }} style={{ ...IS, width:'auto', fontSize:11, padding:'5px 8px', cursor:'pointer' }} defaultValue="">
+              <option value="">+ Sugestões de materiais</option>
+              {MATERIAIS_SUGERIDOS.map((m,i)=><option key={i} value={i}>{m.descricao}</option>)}
+            </select>
+          </div>
+        </div>
         <div style={{ textAlign:'right' }}>
-          <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>Total</p>
+          <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>Total materiais</p>
           <p style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)' }}>{fmtR$(items.reduce((s,i)=>s+calcItem(i),0))}</p>
         </div>
       </div>
@@ -119,9 +155,6 @@ function ItemTable({ items, setItems }: { items: Item[]; setItems: React.Dispatc
 function SecaoCard({ sec, onChange, onRemove }: { sec:Secao; onChange:(s:Secao)=>void; onRemove:()=>void }) {
   const [open, setOpen] = useState(true)
   const up = (k:string,v:any) => onChange({...sec,[k]:v})
-  const addEtapa = () => onChange({...sec, etapas:[...sec.etapas,'']})
-  const updEtapa = (i:number,v:string) => { const e=[...sec.etapas]; e[i]=v; onChange({...sec,etapas:e}) }
-  const remEtapa = (i:number) => onChange({...sec, etapas:sec.etapas.filter((_,j)=>j!==i)})
   return (
     <div style={{ border:'1px solid var(--border)', borderRadius:10, overflow:'hidden', marginBottom:10 }}>
       <div onClick={()=>setOpen(o=>!o)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'var(--bg-primary)', cursor:'pointer' }}>
@@ -135,18 +168,18 @@ function SecaoCard({ sec, onChange, onRemove }: { sec:Secao; onChange:(s:Secao)=
       {open && (
         <div style={{ padding:14, display:'flex', flexDirection:'column', gap:10 }}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
-            <Field label="Título da seção"><input value={sec.titulo} onChange={e=>up('titulo',e.target.value)} style={IS} placeholder="Ex: Alvenaria Externa"/></Field>
+            <Field label="Título"><input value={sec.titulo} onChange={e=>up('titulo',e.target.value)} style={IS} placeholder="Ex: Alvenaria Externa"/></Field>
             <Field label="Subtítulo"><input value={sec.subtitulo} onChange={e=>up('subtitulo',e.target.value)} style={IS} placeholder="Ex: Fachadas e muros"/></Field>
             <Field label="Área / Local"><input value={sec.area} onChange={e=>up('area',e.target.value)} style={IS} placeholder="Ex: 500 m²"/></Field>
           </div>
           <Field label="Etapas de execução">
             {sec.etapas.map((et,i)=>(
               <div key={i} style={{ display:'flex', gap:6, marginBottom:5 }}>
-                <input value={et} onChange={e=>updEtapa(i,e.target.value)} style={{ ...IS, flex:1 }} placeholder={`Etapa ${i+1}`}/>
-                <button onClick={()=>remEtapa(i)} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'4px 8px', color:'#f87171', cursor:'pointer' }}><Trash2 size={11}/></button>
+                <input value={et} onChange={e=>{ const arr=[...sec.etapas]; arr[i]=e.target.value; up('etapas',arr) }} style={{ ...IS, flex:1 }} placeholder={`Etapa ${i+1}`}/>
+                <button onClick={()=>up('etapas',sec.etapas.filter((_,j)=>j!==i))} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'4px 8px', color:'#f87171', cursor:'pointer' }}><Trash2 size={11}/></button>
               </div>
             ))}
-            <button onClick={addEtapa} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'4px 8px', borderRadius:6, border:'1px dashed var(--border)', background:'none', cursor:'pointer', marginTop:2 }}>
+            <button onClick={()=>up('etapas',[...sec.etapas,''])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'4px 8px', borderRadius:6, border:'1px dashed var(--border)', background:'none', cursor:'pointer', marginTop:2 }}>
               <Plus size={11}/> Adicionar etapa
             </button>
           </Field>
@@ -162,14 +195,14 @@ function SecaoCard({ sec, onChange, onRemove }: { sec:Secao; onChange:(s:Secao)=
 
 function PatologiaCard({ pat, onChange, onRemove }: { pat:Patologia; onChange:(p:Patologia)=>void; onRemove:()=>void }) {
   return (
-    <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14, marginBottom:8, display:'grid', gridTemplateColumns:'1fr auto', gap:10 }}>
+    <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14, marginBottom:8, display:'grid', gridTemplateColumns:'1fr 130px', gap:10 }}>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         <Field label="Patologia"><input value={pat.nome} onChange={e=>onChange({...pat,nome:e.target.value})} style={IS} placeholder="Ex: Trincas na fachada"/></Field>
-        <Field label="Descrição"><textarea value={pat.descricao} onChange={e=>onChange({...pat,descricao:e.target.value})} style={{ ...TA, minHeight:56 }} placeholder="Descreva o problema encontrado"/></Field>
+        <Field label="Descrição"><textarea value={pat.descricao} onChange={e=>onChange({...pat,descricao:e.target.value})} style={{ ...TA, minHeight:56 }} placeholder="Descreva o problema"/></Field>
       </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:8, width:120 }}>
-        <ImgUpload label="Foto" src={pat.foto} onFile={v=>onChange({...pat,foto:v})}/>
-        <button onClick={onRemove} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'5px', color:'#f87171', cursor:'pointer' }}><Trash2 size={13}/></button>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <ImgUpload label="Foto" src={pat.foto} onFile={v=>onChange({...pat,foto:v})} small/>
+        <button onClick={onRemove} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'6px', color:'#f87171', cursor:'pointer' }}><Trash2 size={13}/></button>
       </div>
     </div>
   )
@@ -186,8 +219,6 @@ function RefCard({ ref: r, onChange, onRemove }: { ref:Referencia; onChange:(r:R
   )
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
-
 export default function OrcamentoFormPage() {
   const router = useRouter()
   const params = useParams()
@@ -198,18 +229,20 @@ export default function OrcamentoFormPage() {
   const [materiais, setMateriais] = useState<Item[]>([])
   const [patologias, setPatologias] = useState<Patologia[]>([])
   const [referencias, setReferencias] = useState<Referencia[]>([])
-  const [fotos, setFotos] = useState({ logo:'', capa:'', obra1:'', obra2:'', obra3:'', obra4:'' })
-  const [legendas, setLegendas] = useState({ obra1:'', obra2:'', obra3:'', obra4:'' })
+  const [fotosObra, setFotosObra] = useState<FotoObra[]>([])
+  const [logoSrc, setLogoSrc] = useState('')
+  const [capaSrc, setCapaSrc] = useState('')
+  const [marcaDagua, setMarcaDagua] = useState('')
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState('empresa')
+  const [loadingData, setLoadingData] = useState(!!isEdit)
 
   const up = (k:string) => (e:any) => setData((p:any)=>({...p,[k]:e.target.value}))
-  const setFoto = (k:string) => (v:string) => setFotos(p=>({...p,[k]:v}))
-  const setLeg = (k:string) => (v:string) => setLegendas(p=>({...p,[k]:v}))
 
   useEffect(() => {
     if (!isEdit) return
     const load = async () => {
+      setLoadingData(true)
       const { data: orc } = await supabase.from('orcamentos').select('*').eq('id', params.id).single()
       if (orc) {
         setData(orc)
@@ -217,9 +250,12 @@ export default function OrcamentoFormPage() {
         setMateriais(orc.itens_materiais || [])
         setPatologias(orc.patologias || [])
         setReferencias(orc.referencias || [])
-        if (orc.fotos) setFotos(orc.fotos)
-        if (orc.legendas) setLegendas(orc.legendas)
+        setFotosObra(orc.fotos_obra || [])
+        if (orc.fotos?.logo) setLogoSrc(orc.fotos.logo)
+        if (orc.fotos?.capa) setCapaSrc(orc.fotos.capa)
+        if (orc.fotos?.marca_dagua) setMarcaDagua(orc.fotos.marca_dagua)
       }
+      setLoadingData(false)
     }
     load()
   }, [isEdit, params?.id])
@@ -231,11 +267,12 @@ export default function OrcamentoFormPage() {
   const salvar = async () => {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setSaving(false); return }
     const payload = {
       ...data, user_id: user.id,
       secoes, itens_materiais: materiais, patologias, referencias,
-      fotos, legendas,
+      fotos_obra: fotosObra,
+      fotos: { logo: logoSrc, capa: capaSrc, marca_dagua: marcaDagua },
       total_mao_obra: totalMaoObra, total_materiais: totalMateriais, total_geral: totalGeral,
       updated_at: new Date().toISOString(),
     }
@@ -261,12 +298,9 @@ export default function OrcamentoFormPage() {
       cliente_endereco: data.cliente_endereco, cliente_telefone: data.cliente_telefone,
       numero: data.numero, data_orcamento: data.data_orcamento,
       cidade_data: data.cidade_data, validade_dias: data.validade_dias,
-      logoBase64: fotos.logo, foto_capa: fotos.capa,
-      foto_obra1: fotos.obra1, legenda_foto_obra1: legendas.obra1,
-      foto_obra2: fotos.obra2, legenda_foto_obra2: legendas.obra2,
-      foto_obra3: fotos.obra3, legenda_foto_obra3: legendas.obra3,
-      foto_obra4: fotos.obra4, legenda_foto_obra4: legendas.obra4,
-      secoes: secoes.map(s=>({...s, etapas: s.etapas.filter(e=>e.trim())})),
+      logoBase64: logoSrc, foto_capa: capaSrc, marca_dagua: marcaDagua,
+      fotos_obra: fotosObra,
+      secoes: secoes.map(s=>({...s, etapas:s.etapas.filter(e=>e.trim())})),
       patologias, itens_materiais: materiais, referencias,
       total_mao_obra: totalMaoObra, total_materiais: totalMateriais, total_geral: totalGeral,
       forma_pagamento: data.forma_pagamento, num_parcelas: +data.num_parcelas||0,
@@ -288,6 +322,15 @@ export default function OrcamentoFormPage() {
     { id:'referencias',label:'Referências' },
   ]
 
+  if (loadingData) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', background:'var(--bg-primary)' }}>
+      <div style={{ textAlign:'center' }}>
+        <div className="w-8 h-8 border-2 border-gray-700 border-t-white rounded-full animate-spin" style={{ margin:'0 auto 12px' }}/>
+        <p style={{ color:'var(--text-muted)', fontSize:13 }}>Carregando orçamento...</p>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ padding:20, background:'var(--bg-primary)', minHeight:'100vh' }}>
       {/* Header */}
@@ -295,7 +338,9 @@ export default function OrcamentoFormPage() {
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <button onClick={()=>router.push('/dashboard/orcamentos')} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'6px 10px', color:'var(--text-muted)', cursor:'pointer' }}><ArrowLeft size={15}/></button>
           <div>
-            <h1 style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-.3px' }}>{isEdit?`Orçamento ${data.numero}`:'Novo Orçamento'}</h1>
+            <h1 style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-.3px' }}>
+              {isEdit ? `Editando: ${data.numero}` : 'Novo Orçamento'}
+            </h1>
             <p style={{ fontSize:11, color:'var(--text-muted)' }}>Proposta comercial de reforma e pintura</p>
           </div>
         </div>
@@ -309,8 +354,8 @@ export default function OrcamentoFormPage() {
           <button onClick={baixarPDF} style={{ display:'flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:500, color:'var(--text-primary)', cursor:'pointer' }}>
             <Download size={13}/> PDF Premium
           </button>
-          <button onClick={salvar} disabled={saving} style={{ display:'flex', alignItems:'center', gap:5, background:'var(--text-primary)', color:'var(--bg-primary)', border:'none', borderRadius:8, padding:'7px 15px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-            <Save size={13}/> {saving?'Salvando...':'Salvar'}
+          <button onClick={salvar} disabled={saving} style={{ display:'flex', alignItems:'center', gap:5, background:'var(--text-primary)', color:'var(--bg-primary)', border:'none', borderRadius:8, padding:'7px 15px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?0.7:1 }}>
+            <Save size={13}/> {saving ? 'Salvando...' : (isEdit ? 'Salvar alterações' : 'Criar orçamento')}
           </button>
         </div>
       </div>
@@ -319,9 +364,9 @@ export default function OrcamentoFormPage() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:14 }}>
         {[
           { label:'Mão de obra', value:fmtR$(totalMaoObra), color:'#60a5fa' },
-          { label:'Materiais', value:fmtR$(totalMateriais), color:'#a78bfa' },
+          { label:'Materiais',   value:fmtR$(totalMateriais), color:'#a78bfa' },
           { label:'Total geral', value:fmtR$(totalGeral), color:'var(--text-primary)' },
-          { label:'Seções', value:secoes.length, color:'#34d399' },
+          { label:'Fotos da obra', value:fotosObra.filter(f=>f.src).length+'/12', color:'#34d399' },
         ].map(({label,value,color})=>(
           <div key={label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px' }}>
             <p style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3, fontWeight:500 }}>{label}</p>
@@ -343,7 +388,6 @@ export default function OrcamentoFormPage() {
         ))}
       </div>
 
-      {/* Conteúdo */}
       <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:18 }}>
 
         {/* EMPRESA */}
@@ -386,21 +430,52 @@ export default function OrcamentoFormPage() {
         {/* FOTOS */}
         {tab==='fotos' && (
           <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-              <ImgUpload label="Logo da empresa" src={fotos.logo} onFile={setFoto('logo')}/>
-              <ImgUpload label="Foto de capa (página 1)" src={fotos.capa} onFile={setFoto('capa')}/>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14 }}>
+              <ImgUpload label="Logo da empresa" src={logoSrc} onFile={setLogoSrc}/>
+              <ImgUpload label="Foto de capa (página 1)" src={capaSrc} onFile={setCapaSrc}/>
+              <div style={FS}>
+                <label style={LS}>Marca d'água das páginas</label>
+                <ImgUpload label="" src={marcaDagua} onFile={setMarcaDagua}/>
+                <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>Aparece suavemente no fundo de todas as páginas</p>
+              </div>
             </div>
-            <p style={{ fontSize:12, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.04em', marginBottom:-4 }}>Galeria da obra (até 4 fotos)</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-              <ImgUpload label="Foto da obra 1" src={fotos.obra1} onFile={setFoto('obra1')} legenda={legendas.obra1} onLegenda={setLeg('obra1')}/>
-              <ImgUpload label="Foto da obra 2" src={fotos.obra2} onFile={setFoto('obra2')} legenda={legendas.obra2} onLegenda={setLeg('obra2')}/>
-              <ImgUpload label="Foto da obra 3" src={fotos.obra3} onFile={setFoto('obra3')} legenda={legendas.obra3} onLegenda={setLeg('obra3')}/>
-              <ImgUpload label="Foto da obra 4" src={fotos.obra4} onFile={setFoto('obra4')} legenda={legendas.obra4} onLegenda={setLeg('obra4')}/>
+
+            <div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <p style={{ fontSize:12, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.04em' }}>
+                  Galeria da obra — {fotosObra.filter(f=>f.src).length}/12 fotos
+                </p>
+                {fotosObra.length < 12 && (
+                  <button onClick={()=>setFotosObra(p=>[...p,novaFoto()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
+                    <Plus size={12}/> Adicionar foto
+                  </button>
+                )}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+                {fotosObra.map((foto,i)=>(
+                  <div key={foto.id} style={{ position:'relative' }}>
+                    <ImgUpload
+                      label={`Foto ${i+1}`}
+                      src={foto.src}
+                      onFile={v=>setFotosObra(p=>p.map(f=>f.id===foto.id?{...f,src:v}:f))}
+                      legenda={foto.legenda}
+                      onLegenda={v=>setFotosObra(p=>p.map(f=>f.id===foto.id?{...f,legenda:v}:f))}
+                      small
+                    />
+                    <button onClick={()=>setFotosObra(p=>p.filter(f=>f.id!==foto.id))} style={{ position:'absolute', top:20, right:2, background:'rgba(239,68,68,0.8)', border:'none', borderRadius:4, padding:'2px 5px', color:'#fff', cursor:'pointer', fontSize:10 }}>✕</button>
+                  </div>
+                ))}
+                {fotosObra.length === 0 && (
+                  <div style={{ gridColumn:'span 4', textAlign:'center', padding:32, color:'var(--text-muted)', fontSize:13 }}>
+                    Clique em "Adicionar foto" para incluir fotos da obra (máx. 12)
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* DIAGNÓSTICO / PATOLOGIAS */}
+        {/* DIAGNÓSTICO */}
         {tab==='patologias' && (
           <div>
             <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Registre as patologias encontradas na obra. Cada uma pode ter foto e descrição técnica.</p>
@@ -415,7 +490,7 @@ export default function OrcamentoFormPage() {
           </div>
         )}
 
-        {/* SERVIÇOS / SEÇÕES */}
+        {/* SERVIÇOS */}
         {tab==='secoes' && (
           <div>
             <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Cada seção vira uma página de serviço no PDF com etapas detalhadas e valor.</p>
@@ -443,10 +518,7 @@ export default function OrcamentoFormPage() {
                   {l:'Materiais',   v:fmtR$(totalMateriais), c:'#a78bfa'},
                   {l:'Total geral', v:fmtR$(totalGeral), c:'var(--text-primary)'},
                 ].map(({l,v,c})=>(
-                  <div key={l}>
-                    <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{l}</p>
-                    <p style={{ fontSize:20, fontWeight:700, color:c }}>{v}</p>
-                  </div>
+                  <div key={l}><p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{l}</p><p style={{ fontSize:20, fontWeight:700, color:c }}>{v}</p></div>
                 ))}
               </div>
             </div>
@@ -454,7 +526,7 @@ export default function OrcamentoFormPage() {
             <Field label="Valor de entrada (R$)"><input type="number" value={data.valor_entrada} onChange={up('valor_entrada')} style={IS}/></Field>
             <Field label="Nº de unidades/apartamentos"><input type="number" value={data.num_unidades} onChange={up('num_unidades')} style={IS} placeholder="0 = não mostrar"/></Field>
             {+data.num_parcelas > 1 && (
-              <div style={{ ...FS, gridColumn:'span 1' }}>
+              <div style={FS}>
                 <label style={LS}>Valor por parcela</label>
                 <p style={{ fontSize:20, fontWeight:700, color:'#34d399', padding:'8px 0' }}>
                   {fmtR$((totalGeral-(+data.valor_entrada||0))/(+data.num_parcelas||1))}
@@ -468,7 +540,7 @@ export default function OrcamentoFormPage() {
               </div>
             )}
             <div style={{ ...FS, gridColumn:'span 2' }}>
-              <label style={LS}>Descrição da forma de pagamento</label>
+              <label style={LS}>Forma de pagamento</label>
               <textarea value={data.forma_pagamento} onChange={up('forma_pagamento')} style={TA}/>
             </div>
           </div>
@@ -478,7 +550,7 @@ export default function OrcamentoFormPage() {
         {tab==='condicoes' && (
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <Field label="Prazo de execução"><input value={data.prazo_execucao} onChange={up('prazo_execucao')} style={IS}/></Field>
-            <Field label="Validade da proposta (dias)"><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={IS}/></Field>
+            <Field label="Validade (dias)"><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={IS}/></Field>
             <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Garantia da tinta</label><textarea value={data.garantia_tinta} onChange={up('garantia_tinta')} style={{ ...TA, minHeight:56 }}/></div>
             <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Garantia da execução</label><textarea value={data.garantia_execucao} onChange={up('garantia_execucao')} style={{ ...TA, minHeight:56 }}/></div>
             <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Observações gerais</label><textarea value={data.observacoes} onChange={up('observacoes')} style={TA}/></div>

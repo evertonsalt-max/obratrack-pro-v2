@@ -100,7 +100,16 @@ const M = 14
 const ACCENT = [20, 20, 20] as [number,number,number]
 const LIGHT = [245, 245, 245] as [number,number,number]
 
-function addWatermark(pdf: jsPDF, texto: string) {
+function addWatermark(pdf: jsPDF, texto: string, imgBase64?: string) {
+  if (imgBase64) {
+    try {
+      pdf.saveGraphicsState()
+      pdf.setGState(new (pdf as any).GState({ opacity: 0.06 }))
+      pdf.addImage(imgBase64, "PNG", W/2-40, H/2-40, 80, 80)
+      pdf.restoreGraphicsState()
+    } catch(_) {}
+    return
+  }
   pdf.saveGraphicsState()
   pdf.setGState(new (pdf as any).GState({ opacity: 0.04 }))
   pdf.setTextColor(0, 0, 0)
@@ -173,7 +182,7 @@ export async function gerarPDFPremium(p: PDFParams) {
   const newPage = (titulo: string) => {
     pdf.addPage()
     page++
-    addWatermark(pdf, p.empresa_nome || 'EMPRESA')
+    addWatermark(pdf, p.empresa_nome || 'EMPRESA', p.marca_dagua || 'EMPRESA')
     addHeader(pdf, p, titulo, page)
     addFooter(pdf, p)
     return 22
@@ -182,7 +191,7 @@ export async function gerarPDFPremium(p: PDFParams) {
   // ═══════════════════════════════════════════════════════
   // PÁGINA 1 — CAPA
   // ═══════════════════════════════════════════════════════
-  addWatermark(pdf, p.empresa_nome || 'EMPRESA')
+  addWatermark(pdf, p.empresa_nome || 'EMPRESA', p.marca_dagua || 'EMPRESA')
 
   // Fundo superior
   pdf.setFillColor(...ACCENT)
@@ -371,31 +380,37 @@ export async function gerarPDFPremium(p: PDFParams) {
   // Galeria de fotos da obra
   y = sectionTitle(pdf, 'Estado Atual da Obra', y)
 
-  const fotos = [
-    { src: p.foto_obra1, leg: p.legenda_foto_obra1 },
-    { src: p.foto_obra2, leg: p.legenda_foto_obra2 },
-    { src: p.foto_obra3, leg: p.legenda_foto_obra3 },
-    { src: p.foto_obra4, leg: p.legenda_foto_obra4 },
-  ].filter(f => f.src)
+  const fotosArray = p.fotos_obra && p.fotos_obra.length > 0
+    ? p.fotos_obra.filter(f => f.src)
+    : [
+        p.foto_obra1 && { src: p.foto_obra1, legenda: p.legenda_foto_obra1 || 'Foto 1' },
+        p.foto_obra2 && { src: p.foto_obra2, legenda: p.legenda_foto_obra2 || 'Foto 2' },
+        p.foto_obra3 && { src: p.foto_obra3, legenda: p.legenda_foto_obra3 || 'Foto 3' },
+        p.foto_obra4 && { src: p.foto_obra4, legenda: p.legenda_foto_obra4 || 'Foto 4' },
+      ].filter(Boolean) as Array<{src:string;legenda:string}>
 
-  if (fotos.length > 0) {
-    const fw = (W-2*M-4)/2
-    const fh = 45
-    fotos.slice(0,4).forEach((f, i) => {
-      const col = i%2
-      const row = Math.floor(i/2)
-      const fx = M + col*(fw+4)
+  if (fotosArray.length > 0) {
+    const cols = fotosArray.length <= 4 ? 2 : fotosArray.length <= 9 ? 3 : 4
+    const fw = (W-2*M-(cols-1)*3)/cols
+    const fh = cols === 2 ? 45 : cols === 3 ? 38 : 30
+    fotosArray.forEach((f, i) => {
+      if (i > 0 && i % (cols*2) === 0) {
+        y = newPage('Galeria da Obra — continuacao')
+        y = sectionTitle(pdf, 'Estado Atual da Obra (cont.)', y)
+      }
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const fx = M + col*(fw+3)
       const fy = y + row*(fh+10)
-      try { pdf.addImage(f.src!, 'JPEG', fx, fy, fw, fh) } catch(_) {}
+      try { pdf.addImage(f.src, 'JPEG', fx, fy, fw, fh) } catch(_) {}
       pdf.setFillColor(20,20,20)
       pdf.rect(fx, fy+fh, fw, 8, 'F')
       pdf.setTextColor(255,255,255)
-      pdf.setFontSize(7)
+      pdf.setFontSize(6.5)
       pdf.setFont('helvetica', 'normal')
-      const leg = f.leg || `Foto ${i+1}`
-      pdf.text(leg, fx+fw/2, fy+fh+5, { align: 'center' })
+      pdf.text(f.legenda || `Foto ${i+1}`, fx+fw/2, fy+fh+5.5, { align: 'center' })
     })
-    y += Math.ceil(fotos.length/2)*(fh+10) + 4
+    y += Math.ceil(fotosArray.length/cols)*(fh+10) + 4
   } else {
     pdf.setFillColor(240,240,240)
     pdf.rect(M, y, W-2*M, 30, 'F')
