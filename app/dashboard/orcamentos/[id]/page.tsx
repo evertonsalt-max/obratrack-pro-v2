@@ -1,14 +1,9 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import { Plus, Trash2, Download, Save, ArrowLeft, ChevronDown, ChevronUp, Bold, Italic, List } from 'lucide-react'
 import { gerarPDFPremium } from '@/lib/OrcamentoPDF'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
 
 const fmtR$ = (v: number) => 'R$ ' + (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})
 
