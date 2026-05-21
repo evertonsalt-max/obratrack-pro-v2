@@ -918,6 +918,36 @@ export async function gerarPDFPremium(p: PDFParams) {
       margin: { left: M, right: M },
       alternateRowStyles: { fillColor: [248,248,248] },
     })
+    y = (pdf as any).lastAutoTable.finalY + 10
+
+    // Fotos de referencias / portfolio
+    if (p.fotos_referencias && p.fotos_referencias.length > 0) {
+      const fr = (p.fotos_referencias as any[]).filter((f:any) => f.src)
+      if (fr.length > 0) {
+        y = sectionTitle(pdf, 'Portfolio de Obras', y)
+        const cols = Math.min(fr.length, 3)
+        const fw = (W - 2*M - (cols-1)*4) / cols
+        const fh = fw * 0.65
+        fr.forEach((f:any, i:number) => {
+          const col = i % cols
+          const row = Math.floor(i / cols)
+          if (i > 0 && col === 0 && y + row*(fh+14) > 240) {
+            y = newPage('Portfolio — continuacao')
+            y = sectionTitle(pdf, 'Portfolio de Obras (cont.)', y)
+          }
+          const fx = M + col*(fw+4)
+          const fy = y + (Math.floor(i/cols))*(fh+14)
+          addImg(pdf, f.src, fx, fy, fw, fh)
+          if (f.legenda) {
+            pdf.setFontSize(7)
+            pdf.setFont('helvetica', 'normal')
+            pdf.setTextColor(80,80,80)
+            pdf.text(f.legenda, fx + fw/2, fy + fh + 5, { align: 'center' })
+          }
+        })
+        y += Math.ceil(fr.length/cols) * (fh+14) + 4
+      }
+    }
   }
 
   // Salvar
