@@ -18,7 +18,7 @@ export default function RelatoriosPage() {
   const { logs }     = useWorkLogs()
   const { employees }= useEmployees()
   const { payments } = usePayments()
-  const { taxes }    = useEmployeeTaxes()
+  const { taxes, add: addTax, remove: removeTax } = useEmployeeTaxes()
   const summary      = useFinancialSummary(employees, logs, payments, taxes)
 
   const [aba,  setAba]  = useState<Aba>('empresa')
@@ -139,6 +139,11 @@ export default function RelatoriosPage() {
           </>)}
           {aba==='jornadas'&&(<div><label className="label">Jornada</label><select value={fJ} onChange={e=>setFJ(e.target.value)} className="input-field"><option value="">Todas</option>{Object.entries(JORNADA_CONFIG).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>)}
           {aba==='encargos'&&(<>
+          <div className="flex justify-end mb-4">
+            <button onClick={()=>setModalEncargo(true)} className="btn-primary flex items-center gap-2">
+              <span>+</span> Lançar Encargo
+            </button>
+          </div>
             <div><label className="label">Mês</label><select value={fMes} onChange={e=>setFMes(e.target.value)} className="input-field"><option value="">Todos</option>{MESES.map((m,i)=><option key={i} value={i+1}>{m}</option>)}</select></div>
             <div><label className="label">Ano</label><select value={fAno} onChange={e=>setFAno(e.target.value)} className="input-field">{[new Date().getFullYear(),new Date().getFullYear()-1].map(a=><option key={a}>{a}</option>)}</select></div>
           </>)}
@@ -257,7 +262,7 @@ export default function RelatoriosPage() {
         <div className="space-y-5">
           <div className="grid grid-cols-3 gap-4">{[{l:'INSS',v:fmtR$(taxasFilt.reduce((s,t)=>s+(Number(t.inss_value)||0),0)),c:'text-blue-400'},{l:'FGTS',v:fmtR$(taxasFilt.reduce((s,t)=>s+(Number(t.fgts_value)||0),0)),c:'text-cyan-400'},{l:'Total',v:fmtR$(taxasFilt.reduce((s,t)=>s+(Number(t.inss_value)||0)+(Number(t.fgts_value)||0),0)),c:'text-purple-400'}].map(({l,v,c})=><div key={l} className="card"><p className="text-xs font-semibold text-gray-400 uppercase mb-2">{l}</p><p className={`text-xl font-extrabold ${c}`}>{v}</p></div>)}</div>
           <div className="card"><h3 className="text-white font-bold mb-4">Detalhamento</h3>
-            <table className="w-full"><thead><tr className="border-b border-gray-800">{['Funcionário','Mês','Ano','INSS','FGTS','Total','Obs'].map(h=><th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
+            <table className="w-full"><thead><tr className="border-b border-gray-800">{['Funcionário','Mês','Ano','INSS','FGTS','Total','Obs',''].map(h=><th key={h} className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase">{h}</th>)}</tr></thead>
             <tbody>{taxasFilt.map((t,i)=>{const emp=employees.find(e=>e.id===t.employee_id);return(<tr key={t.id} className={`border-b border-gray-800 hover:bg-gray-800/50 ${i%2===1?'bg-gray-800/20':''}`}>
               <td className="py-3 px-4 text-white text-sm">{emp?.nome||'—'}</td>
               <td className="py-3 px-4 text-gray-400 text-sm">{MESES[t.month-1]}</td>
@@ -317,5 +322,61 @@ export default function RelatoriosPage() {
         </div>
       )}
     </div>
+
+      {modalEncargo && (
+        <div onClick={e=>{if(e.target===e.currentTarget)setModalEncargo(false)}} className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center p-5 border-b border-gray-800">
+              <h2 className="text-white font-bold text-lg">Lançar Encargo</h2>
+              <button onClick={()=>setModalEncargo(false)} className="text-gray-400 hover:text-white text-xl">×</button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="label">Funcionário *</label>
+                <select value={formEncargo.employee_id} onChange={e=>setFormEncargo(p=>({...p,employee_id:e.target.value}))} className="input-field">
+                  <option value="">— Selecione —</option>
+                  {employees.map(e=><option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Mês</label>
+                  <select value={formEncargo.month} onChange={e=>setFormEncargo(p=>({...p,month:+e.target.value}))} className="input-field">
+                    {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'].map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Ano</label>
+                  <input type="number" value={formEncargo.year} onChange={e=>setFormEncargo(p=>({...p,year:+e.target.value}))} className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">INSS (R$)</label>
+                  <input type="number" value={formEncargo.inss_value} onChange={e=>setFormEncargo(p=>({...p,inss_value:e.target.value}))} placeholder="0,00" className="input-field"/>
+                </div>
+                <div>
+                  <label className="label">FGTS (R$)</label>
+                  <input type="number" value={formEncargo.fgts_value} onChange={e=>setFormEncargo(p=>({...p,fgts_value:e.target.value}))} placeholder="0,00" className="input-field"/>
+                </div>
+              </div>
+              <div>
+                <label className="label">Observações</label>
+                <input value={formEncargo.obs} onChange={e=>setFormEncargo(p=>({...p,obs:e.target.value}))} placeholder="Opcional" className="input-field"/>
+              </div>
+              {formEncargo.inss_value && formEncargo.fgts_value && (
+                <div className="bg-gray-800 rounded-lg p-3 flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Total encargos:</span>
+                  <span className="text-purple-400 font-bold">{('R$ ' + ((Number(formEncargo.inss_value)||0)+(Number(formEncargo.fgts_value)||0)).toLocaleString('pt-BR',{minimumFractionDigits:2}))}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-5 border-t border-gray-800">
+              <button onClick={()=>setModalEncargo(false)} className="btn-ghost">Cancelar</button>
+              <button onClick={salvarEncargo} disabled={savingEncargo} className="btn-primary">
+                {savingEncargo ? 'Salvando...' : 'Salvar Encargo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
   )
 }
