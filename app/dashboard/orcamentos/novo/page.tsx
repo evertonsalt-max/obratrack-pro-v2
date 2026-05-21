@@ -463,6 +463,9 @@ export default function OrcamentoFormPage() {
   }
 
   const baixarPDF = async () => {
+    console.log('PDF - logoSrc:', logoSrc ? logoSrc.substring(0,30) : 'VAZIO')
+    console.log('PDF - capaSrc:', capaSrc ? capaSrc.substring(0,30) : 'VAZIO')
+    console.log('PDF - fotosObra:', fotosObra.length, 'fotos')
     await gerarPDFPremium({
       empresa_nome:data.empresa_nome, empresa_cnpj:data.empresa_cnpj,
       empresa_endereco:data.empresa_endereco, empresa_telefone:data.empresa_telefone,
