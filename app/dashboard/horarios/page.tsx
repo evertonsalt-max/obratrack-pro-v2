@@ -17,7 +17,6 @@ export default function HorariosPage() {
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string|null>(null)
-  const [editId, setEditId] = useState<string|null>(null)
   const [fF, setFF] = useState('')
   const [fD, setFD] = useState('')
   const [fJ, setFJ] = useState('')
