@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { Plus, FileText, CheckCircle, Clock, XCircle, Eye, Copy, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -27,9 +27,9 @@ export default function OrcamentosPage() {
 
   const load = async () => {
     setLoading(true)
-    const { data: { user } } = await sb().auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await sb().from('orcamentos').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+    const { data } = await supabase.from('orcamentos').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     setOrcamentos(data || [])
     setLoading(false)
   }
@@ -37,10 +37,10 @@ export default function OrcamentosPage() {
   useEffect(() => { load() }, [])
 
   const duplicar = async (orc) => {
-    const { data: { user } } = await sb().auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const count = orcamentos.length + 1
-    const { data } = await sb().from('orcamentos').insert({
+    const { data } = await supabase.from('orcamentos').insert({
       ...orc, id: undefined, user_id: user.id,
       numero: 'ORC-' + String(count).padStart(3, '0'),
       status: 'pendente', created_at: undefined, updated_at: undefined,
@@ -50,7 +50,7 @@ export default function OrcamentosPage() {
 
   const excluir = async (id) => {
     if (!confirm('Excluir este orcamento?')) return
-    await sb().from('orcamentos').delete().eq('id', id)
+    await supabase.from('orcamentos').delete().eq('id', id)
     load()
   }
 
