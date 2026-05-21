@@ -1,154 +1,192 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { Plus, Trash2, Download, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react'
-import { gerarPDF } from '@/lib/OrcamentoPDF'
+import { Plus, Trash2, Download, Save, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import { gerarPDFPremium } from '@/lib/OrcamentoPDF'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-const sb = () => supabase
 
-const fmtR$ = (v: number) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+const fmtR$ = (v: number) => 'R$ ' + (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})
 
-interface Item {
-  id: string
-  descricao: string
-  quantidade: number
-  unidade: string
-  valor_unitario: number
-  desconto_pct: number
-}
+interface Item { id: string; descricao: string; quantidade: number; unidade: string; valor_unitario: number; desconto_pct: number }
+interface Secao { id: string; titulo: string; subtitulo: string; area: string; etapas: string[]; valor_mao_obra: number; obs: string }
+interface Patologia { id: string; nome: string; descricao: string; foto: string }
+interface Referencia { id: string; empreendimento: string; contato: string; telefone: string }
 
-const novoItem = (): Item => ({
-  id: Math.random().toString(36).slice(2),
-  descricao: '',
-  quantidade: 1,
-  unidade: 'vb',
-  valor_unitario: 0,
-  desconto_pct: 0,
-})
-
-const calcItem = (item: Item) => item.quantidade * item.valor_unitario * (1 - item.desconto_pct / 100)
+const newId = () => Math.random().toString(36).slice(2)
+const novoItem = (): Item => ({ id: newId(), descricao: '', quantidade: 1, unidade: 'vb', valor_unitario: 0, desconto_pct: 0 })
+const novaSecao = (): Secao => ({ id: newId(), titulo: '', subtitulo: '', area: '', etapas: [''], valor_mao_obra: 0, obs: '' })
+const novaPatologia = (): Patologia => ({ id: newId(), nome: '', descricao: '', foto: '' })
+const novaRef = (): Referencia => ({ id: newId(), empreendimento: '', contato: '', telefone: '' })
+const calcItem = (i: Item) => i.quantidade * i.valor_unitario * (1 - i.desconto_pct / 100)
 
 const defaultData = {
-  numero: 'ORC-001',
-  status: 'pendente',
-  empresa_nome: 'Nascimento Pinturas',
-  empresa_cnpj: '10.212.424/0001-73',
+  numero: 'ORC-001', status: 'pendente',
+  empresa_nome: 'Nascimento Pinturas', empresa_cnpj: '10.212.424/0001-73',
   empresa_endereco: 'Rua Mauri Alcides Scussel nº 46 – Bento Gonçalves - RS',
-  empresa_telefone: '(54) 99704-1323',
-  empresa_whatsapp: '(54) 99704-1323',
-  empresa_email: '',
-  empresa_instagram: '',
-  empresa_responsavel: 'Gabriel Nascimento',
-  empresa_engenheiro: 'Vinicius Pandini',
-  empresa_crea: 'RS 254904',
-  empresa_apresentacao: 'A Nascimento Pinturas (CNPJ 10.212.424/0001-73) é especializada em pinturas prediais com mais de 20 anos de experiência em Bento Gonçalves e região. Contamos com equipe própria, qualificada e registrada, atuando de forma totalmente legalizada.',
-  cliente_nome: '',
-  cliente_obra: '',
-  cliente_endereco: '',
-  cliente_telefone: '',
-  cliente_email: '',
-  cliente_cpf_cnpj: '',
-  data_orcamento: new Date().toISOString().split('T')[0],
-  cidade_data: 'Bento Gonçalves',
-  validade_dias: 30,
-  prazo_execucao: '3 (três) meses',
+  empresa_telefone: '(54) 99704-1323', empresa_whatsapp: '(54) 99704-1323',
+  empresa_email: '', empresa_instagram: '',
+  empresa_responsavel: 'Gabriel Nascimento', empresa_engenheiro: 'Vinicius Pandini',
+  empresa_crea: 'RS 254904', empresa_experiencia: 'mais de 20 anos',
+  empresa_apresentacao: 'A Nascimento Pinturas é especializada em pinturas prediais com mais de 20 anos de experiência em Bento Gonçalves e região. Contamos com equipe própria, qualificada e registrada, atuando de forma totalmente legalizada e em conformidade com a CLT e as exigências do Ministério do Trabalho.',
+  cliente_nome: '', cliente_obra: '', cliente_endereco: '', cliente_telefone: '', cliente_email: '', cliente_cpf_cnpj: '',
+  data_orcamento: new Date().toISOString().split('T')[0], cidade_data: 'Bento Gonçalves',
+  validade_dias: 30, prazo_execucao: '3 (três) meses',
+  garantia_tinta: 'Garantia de até 8 anos conforme ficha técnica dos produtos utilizados.',
+  garantia_execucao: 'Garantia vinculada à aplicação correta do número de demãos determinadas em contrato.',
   forma_pagamento: 'Parcelamento em até 20 (vinte) vezes em parcelas iguais com a primeira no início da obra.',
-  garantia: 'Garantia de até 8 anos, conforme as condições específicas previstas em ficha técnica de produtos utilizados.',
-  observacoes: '',
+  num_parcelas: 20, valor_entrada: 0, num_unidades: 0, observacoes: '',
 }
 
-const inputStyleGlobal = { background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', width: '100%' }
+const IS = { background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:8, padding:'8px 10px', fontSize:13, color:'var(--text-primary)', width:'100%' }
+const LS = { fontSize:11, color:'var(--text-muted)', fontWeight:500 as const, textTransform:'uppercase' as const, letterSpacing:'.04em' }
+const FS = { display:'flex', flexDirection:'column' as const, gap:4 }
+const TA = { ...IS, resize:'vertical' as const, minHeight:72 }
 
-function ItemTable({ items, setItems, label }: { items: Item[], setItems: any, label: string }) {
-  const updateItem = (id: string, key: string, value: any) => {
-    setItems((prev: Item[]) => prev.map((item: Item) => item.id === id ? { ...item, [key]: value } : item))
+// ── Componentes externos (fora do render) ─────────────────────────────────────
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div style={FS}><label style={LS}>{label}</label>{children}</div>
+}
+
+function ImgUpload({ label, src, onFile, legenda, onLegenda }: { label:string; src:string; onFile:(b:string)=>void; legenda?:string; onLegenda?:(v:string)=>void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return
+    const r = new FileReader(); r.onload = () => onFile(r.result as string); r.readAsDataURL(f)
   }
   return (
+    <div style={FS}>
+      <label style={LS}>{label}</label>
+      <div onClick={() => ref.current?.click()} style={{ border:'1px dashed var(--border)', borderRadius:8, padding:12, textAlign:'center', cursor:'pointer', background:'var(--bg-hover)', minHeight:72, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+        {src ? <img src={src} style={{ maxHeight:72, maxWidth:'100%', objectFit:'contain' }} alt=""/> : <span style={{ color:'var(--text-muted)', fontSize:12 }}>🖼 Clique para carregar</span>}
+      </div>
+      <input ref={ref} type="file" accept="image/*" style={{ display:'none' }} onChange={onChange}/>
+      {src && onLegenda && <input value={legenda||''} onChange={e=>onLegenda(e.target.value)} placeholder="Legenda da foto" style={{ ...IS, fontSize:12, marginTop:2 }}/>}
+    </div>
+  )
+}
+
+function ItemTable({ items, setItems }: { items: Item[]; setItems: React.Dispatch<React.SetStateAction<Item[]>> }) {
+  const update = useCallback((id:string, k:string, v:any) => setItems(p=>p.map(i=>i.id===id?{...i,[k]:v}:i)), [setItems])
+  return (
     <div>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+      <div style={{ overflowX:'auto' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-              {['Descricao', 'Qtd', 'Unid.', 'Valor unit.', 'Desc. %', 'Total', ''].map(h => (
-                <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>{h}</th>
+            <tr style={{ borderBottom:'1px solid var(--border)', background:'var(--bg-primary)' }}>
+              {['Descrição','Qtd','Unid.','Valor unit.','Desc.%','Total',''].map(h=>(
+                <th key={h} style={{ padding:'7px 8px', textAlign:'left', fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '6px 8px', minWidth: 200 }}>
-                  <input value={item.descricao} onChange={e => updateItem(item.id, 'descricao', e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12 }} placeholder="Descricao do servico/material"/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 70 }}>
-                  <input type="number" value={item.quantidade} onChange={e => updateItem(item.id, 'quantidade', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 70 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 80 }}>
-                  <select value={item.unidade} onChange={e => updateItem(item.id, 'unidade', e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 6px', fontSize: 12, width: 75 }}>
-                    {['vb','m2','m','un','lt','bd','gl','pc','mt','hr'].map(u => <option key={u}>{u}</option>)}
+            {items.map(item=>(
+              <tr key={item.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                <td style={{ padding:'5px 6px', minWidth:180 }}><input value={item.descricao} onChange={e=>update(item.id,'descricao',e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12 }} placeholder="Descrição"/></td>
+                <td style={{ padding:'5px 6px', width:65 }}><input type="number" value={item.quantidade} onChange={e=>update(item.id,'quantidade',+e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12, width:65 }}/></td>
+                <td style={{ padding:'5px 6px', width:72 }}>
+                  <select value={item.unidade} onChange={e=>update(item.id,'unidade',e.target.value)} style={{ ...IS, padding:'4px 5px', fontSize:12, width:70 }}>
+                    {['vb','m²','m','un','lt','bd','gl','pc','mt','hr','m³'].map(u=><option key={u}>{u}</option>)}
                   </select>
                 </td>
-                <td style={{ padding: '6px 8px', width: 110 }}>
-                  <input type="number" value={item.valor_unitario} onChange={e => updateItem(item.id, 'valor_unitario', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 100 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', width: 70 }}>
-                  <input type="number" value={item.desconto_pct} min={0} max={100} onChange={e => updateItem(item.id, 'desconto_pct', +e.target.value)} style={{ ...inputStyleGlobal, padding: '5px 8px', fontSize: 12, width: 60 }}/>
-                </td>
-                <td style={{ padding: '6px 8px', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap', textAlign: 'right' }}>
-                  {fmtR$(calcItem(item))}
-                </td>
-                <td style={{ padding: '6px 8px' }}>
-                  <button onClick={() => setItems((prev: Item[]) => prev.filter((i: Item) => i.id !== item.id))} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: 6, padding: '4px 6px', color: '#f87171', cursor: 'pointer' }}>
-                    <Trash2 size={12}/>
-                  </button>
-                </td>
+                <td style={{ padding:'5px 6px', width:100 }}><input type="number" value={item.valor_unitario} onChange={e=>update(item.id,'valor_unitario',+e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12, width:95 }}/></td>
+                <td style={{ padding:'5px 6px', width:60 }}><input type="number" value={item.desconto_pct} min={0} max={100} onChange={e=>update(item.id,'desconto_pct',+e.target.value)} style={{ ...IS, padding:'4px 7px', fontSize:12, width:55 }}/></td>
+                <td style={{ padding:'5px 8px', color:'var(--text-primary)', fontWeight:600, whiteSpace:'nowrap', textAlign:'right' }}>{fmtR$(calcItem(item))}</td>
+                <td style={{ padding:'5px 6px' }}><button onClick={()=>setItems(p=>p.filter(i=>i.id!==item.id))} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'4px 6px', color:'#f87171', cursor:'pointer' }}><Trash2 size={12}/></button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-        <button onClick={() => setItems((prev: Item[]) => [...prev, novoItem()])} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', padding: '6px 12px', borderRadius: 8, border: '1px dashed var(--border)', background: 'none', cursor: 'pointer' }}>
-          <Plus size={13}/> Adicionar item
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+        <button onClick={()=>setItems(p=>[...p,novoItem()])} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'5px 10px', borderRadius:7, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
+          <Plus size={12}/> Adicionar item
         </button>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Total {label}</p>
-          <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{fmtR$(items.reduce((s, i) => s + calcItem(i), 0))}</p>
+        <div style={{ textAlign:'right' }}>
+          <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:2 }}>Total</p>
+          <p style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)' }}>{fmtR$(items.reduce((s,i)=>s+calcItem(i),0))}</p>
         </div>
       </div>
     </div>
   )
 }
 
-function ImgUpload({ label, src, onClick, inputRef, onChange, legenda, onLegenda, inputStyle }: any) {
+function SecaoCard({ sec, onChange, onRemove }: { sec:Secao; onChange:(s:Secao)=>void; onRemove:()=>void }) {
+  const [open, setOpen] = useState(true)
+  const up = (k:string,v:any) => onChange({...sec,[k]:v})
+  const addEtapa = () => onChange({...sec, etapas:[...sec.etapas,'']})
+  const updEtapa = (i:number,v:string) => { const e=[...sec.etapas]; e[i]=v; onChange({...sec,etapas:e}) }
+  const remEtapa = (i:number) => onChange({...sec, etapas:sec.etapas.filter((_,j)=>j!==i)})
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</label>
-      <div onClick={onClick} style={{ border: '1px dashed var(--border)', borderRadius: 8, padding: 16, textAlign: 'center', cursor: 'pointer', background: 'var(--bg-hover)', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        {src
-          ? <img src={src} style={{ maxHeight: 80, maxWidth: '100%', objectFit: 'contain' }} alt="preview"/>
-          : <div style={{ color: 'var(--text-muted)', fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 20 }}>🖼</span> Clique para carregar
-            </div>
-        }
+    <div style={{ border:'1px solid var(--border)', borderRadius:10, overflow:'hidden', marginBottom:10 }}>
+      <div onClick={()=>setOpen(o=>!o)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'var(--bg-primary)', cursor:'pointer' }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{sec.titulo||'Nova seção'}</span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:12, color:'var(--text-muted)' }}>{fmtR$(sec.valor_mao_obra)}</span>
+          <button onClick={e=>{e.stopPropagation();onRemove()}} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:5, padding:'3px 6px', color:'#f87171', cursor:'pointer' }}><Trash2 size={12}/></button>
+          {open ? <ChevronUp size={14} style={{ color:'var(--text-muted)' }}/> : <ChevronDown size={14} style={{ color:'var(--text-muted)' }}/>}
+        </div>
       </div>
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onChange}/>
-      {src && (
-        <input
-          value={legenda || ''}
-          onChange={e => onLegenda && onLegenda(e.target.value)}
-          placeholder="Legenda da foto (opcional)"
-          style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--text-primary)', width: '100%', marginTop: 2 }}
-        />
+      {open && (
+        <div style={{ padding:14, display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+            <Field label="Título da seção"><input value={sec.titulo} onChange={e=>up('titulo',e.target.value)} style={IS} placeholder="Ex: Alvenaria Externa"/></Field>
+            <Field label="Subtítulo"><input value={sec.subtitulo} onChange={e=>up('subtitulo',e.target.value)} style={IS} placeholder="Ex: Fachadas e muros"/></Field>
+            <Field label="Área / Local"><input value={sec.area} onChange={e=>up('area',e.target.value)} style={IS} placeholder="Ex: 500 m²"/></Field>
+          </div>
+          <Field label="Etapas de execução">
+            {sec.etapas.map((et,i)=>(
+              <div key={i} style={{ display:'flex', gap:6, marginBottom:5 }}>
+                <input value={et} onChange={e=>updEtapa(i,e.target.value)} style={{ ...IS, flex:1 }} placeholder={`Etapa ${i+1}`}/>
+                <button onClick={()=>remEtapa(i)} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'4px 8px', color:'#f87171', cursor:'pointer' }}><Trash2 size={11}/></button>
+              </div>
+            ))}
+            <button onClick={addEtapa} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', padding:'4px 8px', borderRadius:6, border:'1px dashed var(--border)', background:'none', cursor:'pointer', marginTop:2 }}>
+              <Plus size={11}/> Adicionar etapa
+            </button>
+          </Field>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <Field label="Valor mão de obra (R$)"><input type="number" value={sec.valor_mao_obra} onChange={e=>up('valor_mao_obra',+e.target.value)} style={IS}/></Field>
+            <Field label="Observação"><input value={sec.obs} onChange={e=>up('obs',e.target.value)} style={IS} placeholder="Opcional"/></Field>
+          </div>
+        </div>
       )}
     </div>
   )
 }
+
+function PatologiaCard({ pat, onChange, onRemove }: { pat:Patologia; onChange:(p:Patologia)=>void; onRemove:()=>void }) {
+  return (
+    <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14, marginBottom:8, display:'grid', gridTemplateColumns:'1fr auto', gap:10 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <Field label="Patologia"><input value={pat.nome} onChange={e=>onChange({...pat,nome:e.target.value})} style={IS} placeholder="Ex: Trincas na fachada"/></Field>
+        <Field label="Descrição"><textarea value={pat.descricao} onChange={e=>onChange({...pat,descricao:e.target.value})} style={{ ...TA, minHeight:56 }} placeholder="Descreva o problema encontrado"/></Field>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:8, width:120 }}>
+        <ImgUpload label="Foto" src={pat.foto} onFile={v=>onChange({...pat,foto:v})}/>
+        <button onClick={onRemove} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'5px', color:'#f87171', cursor:'pointer' }}><Trash2 size={13}/></button>
+      </div>
+    </div>
+  )
+}
+
+function RefCard({ ref: r, onChange, onRemove }: { ref:Referencia; onChange:(r:Referencia)=>void; onRemove:()=>void }) {
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr auto', gap:8, marginBottom:6, alignItems:'end' }}>
+      <Field label="Empreendimento"><input value={r.empreendimento} onChange={e=>onChange({...r,empreendimento:e.target.value})} style={IS} placeholder="Nome do cliente/obra"/></Field>
+      <Field label="Contato"><input value={r.contato} onChange={e=>onChange({...r,contato:e.target.value})} style={IS} placeholder="Nome do contato"/></Field>
+      <Field label="Telefone"><input value={r.telefone} onChange={e=>onChange({...r,telefone:e.target.value})} style={IS} placeholder="(00) 00000-0000"/></Field>
+      <button onClick={onRemove} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, padding:'8px', color:'#f87171', cursor:'pointer', marginBottom:1 }}><Trash2 size={13}/></button>
+    </div>
+  )
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 
 export default function OrcamentoFormPage() {
   const router = useRouter()
@@ -156,215 +194,312 @@ export default function OrcamentoFormPage() {
   const isEdit = params?.id && params.id !== 'novo'
 
   const [data, setData] = useState<any>(defaultData)
-  const [itensMaoObra, setItensMaoObra] = useState<Item[]>([])
-  const [itensMateriais, setItensMateriais] = useState<Item[]>([])
-  const [logoBase64, setLogoBase64] = useState<string>('')
-  const [imgFoto1, setImgFoto1] = useState<string>('')
-  const [imgFoto2, setImgFoto2] = useState<string>('')
-  const [legendaLogo, setLegendaLogo] = useState<string>('')
-  const [legendaFoto1, setLegendaFoto1] = useState<string>('')
-  const [legendaFoto2, setLegendaFoto2] = useState<string>('')
+  const [secoes, setSecoes] = useState<Secao[]>([])
+  const [materiais, setMateriais] = useState<Item[]>([])
+  const [patologias, setPatologias] = useState<Patologia[]>([])
+  const [referencias, setReferencias] = useState<Referencia[]>([])
+  const [fotos, setFotos] = useState({ logo:'', capa:'', obra1:'', obra2:'', obra3:'', obra4:'' })
+  const [legendas, setLegendas] = useState({ obra1:'', obra2:'', obra3:'', obra4:'' })
   const [saving, setSaving] = useState(false)
-  const [tab, setTab] = useState<'empresa'|'cliente'|'maoobra'|'materiais'|'condicoes'>('empresa')
+  const [tab, setTab] = useState('empresa')
 
-  const logoRef = useRef<HTMLInputElement>(null)
-  const foto1Ref = useRef<HTMLInputElement>(null)
-  const foto2Ref = useRef<HTMLInputElement>(null)
+  const up = (k:string) => (e:any) => setData((p:any)=>({...p,[k]:e.target.value}))
+  const setFoto = (k:string) => (v:string) => setFotos(p=>({...p,[k]:v}))
+  const setLeg = (k:string) => (v:string) => setLegendas(p=>({...p,[k]:v}))
 
   useEffect(() => {
-    if (isEdit) {
-      const load = async () => {
-        const { data: orc } = await sb().from('orcamentos').select('*').eq('id', params.id).single()
-        if (orc) {
-          setData(orc)
-          setItensMaoObra(orc.itens_mao_obra || [])
-          setItensMateriais(orc.itens_materiais || [])
-        }
+    if (!isEdit) return
+    const load = async () => {
+      const { data: orc } = await supabase.from('orcamentos').select('*').eq('id', params.id).single()
+      if (orc) {
+        setData(orc)
+        setSecoes(orc.secoes || [])
+        setMateriais(orc.itens_materiais || [])
+        setPatologias(orc.patologias || [])
+        setReferencias(orc.referencias || [])
+        if (orc.fotos) setFotos(orc.fotos)
+        if (orc.legendas) setLegendas(orc.legendas)
       }
-      load()
     }
+    load()
   }, [isEdit, params?.id])
 
-  const up = (k: string) => (e: any) => setData((p: any) => ({ ...p, [k]: e.target.value }))
-
-  const totalMaoObra = itensMaoObra.reduce((s, i) => s + calcItem(i), 0)
-  const totalMateriais = itensMateriais.reduce((s, i) => s + calcItem(i), 0)
+  const totalMaoObra = secoes.reduce((s,sec)=>s+sec.valor_mao_obra,0)
+  const totalMateriais = materiais.reduce((s,i)=>s+calcItem(i),0)
   const totalGeral = totalMaoObra + totalMateriais
-
-  const updateItem = (list: Item[], setList: any, id: string, key: string, value: any) => {
-    setList(list.map((item: Item) => item.id === id ? { ...item, [key]: value } : item))
-  }
 
   const salvar = async () => {
     setSaving(true)
-    const { data: { user } } = await sb().auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const payload = {
-      ...data,
-      user_id: user.id,
-      itens_mao_obra: itensMaoObra,
-      itens_materiais: itensMateriais,
-      total_mao_obra: totalMaoObra,
-      total_materiais: totalMateriais,
-      total_geral: totalGeral,
+      ...data, user_id: user.id,
+      secoes, itens_materiais: materiais, patologias, referencias,
+      fotos, legendas,
+      total_mao_obra: totalMaoObra, total_materiais: totalMateriais, total_geral: totalGeral,
       updated_at: new Date().toISOString(),
     }
     if (isEdit) {
-      await sb().from('orcamentos').update(payload).eq('id', params.id)
+      await supabase.from('orcamentos').update(payload).eq('id', params.id)
+      setSaving(false)
     } else {
-      const { data: { user } } = await sb().auth.getUser()
-      const { data: created } = await sb().from('orcamentos').insert({ ...payload, user_id: user!.id }).select().single()
-      if (created) { router.push(`/dashboard/orcamentos/${created.id}`); return }
+      const { data: cr } = await supabase.from('orcamentos').insert(payload).select().single()
+      if (cr) router.push(`/dashboard/orcamentos/${cr.id}`)
+      else setSaving(false)
     }
-    setSaving(false)
-  }
-
-  const handleImagem = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setter(reader.result as string)
-    reader.readAsDataURL(file)
   }
 
   const baixarPDF = async () => {
-    await gerarPDF({
-      data, itensMaoObra, itensMateriais,
-      totalMaoObra, totalMateriais, totalGeral,
-      logoBase64, imgFoto1, imgFoto2, legendaFoto1, legendaFoto2,
+    await gerarPDFPremium({
+      empresa_nome: data.empresa_nome, empresa_cnpj: data.empresa_cnpj,
+      empresa_endereco: data.empresa_endereco, empresa_telefone: data.empresa_telefone,
+      empresa_whatsapp: data.empresa_whatsapp, empresa_email: data.empresa_email,
+      empresa_instagram: data.empresa_instagram, empresa_responsavel: data.empresa_responsavel,
+      empresa_engenheiro: data.empresa_engenheiro, empresa_crea: data.empresa_crea,
+      empresa_apresentacao: data.empresa_apresentacao, empresa_experiencia: data.empresa_experiencia,
+      cliente_nome: data.cliente_nome, cliente_obra: data.cliente_obra,
+      cliente_endereco: data.cliente_endereco, cliente_telefone: data.cliente_telefone,
+      numero: data.numero, data_orcamento: data.data_orcamento,
+      cidade_data: data.cidade_data, validade_dias: data.validade_dias,
+      logoBase64: fotos.logo, foto_capa: fotos.capa,
+      foto_obra1: fotos.obra1, legenda_foto_obra1: legendas.obra1,
+      foto_obra2: fotos.obra2, legenda_foto_obra2: legendas.obra2,
+      foto_obra3: fotos.obra3, legenda_foto_obra3: legendas.obra3,
+      foto_obra4: fotos.obra4, legenda_foto_obra4: legendas.obra4,
+      secoes: secoes.map(s=>({...s, etapas: s.etapas.filter(e=>e.trim())})),
+      patologias, itens_materiais: materiais, referencias,
+      total_mao_obra: totalMaoObra, total_materiais: totalMateriais, total_geral: totalGeral,
+      forma_pagamento: data.forma_pagamento, num_parcelas: +data.num_parcelas||0,
+      valor_entrada: +data.valor_entrada||0, num_unidades: +data.num_unidades||0,
+      prazo_execucao: data.prazo_execucao, garantia_tinta: data.garantia_tinta,
+      garantia_execucao: data.garantia_execucao, observacoes: data.observacoes,
     })
   }
 
-  const fieldStyle = { display: 'flex', flexDirection: 'column' as const, gap: 4 }
-  const labelStyle = { fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '.04em' }
-  const inputStyle = { background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: 'var(--text-primary)', width: '100%' }
-  const textareaStyle = { ...inputStyle, resize: 'vertical' as const, minHeight: 80 }
-
-  const tabs = [
-    { id: 'empresa',   label: 'Empresa' },
-    { id: 'cliente',   label: 'Cliente' },
-    { id: 'maoobra',   label: 'Mão de obra' },
-    { id: 'materiais', label: 'Materiais' },
-    { id: 'condicoes', label: 'Condições' },
+  const TABS = [
+    { id:'empresa',    label:'Empresa' },
+    { id:'cliente',    label:'Cliente' },
+    { id:'fotos',      label:'Fotos' },
+    { id:'patologias', label:'Diagnóstico' },
+    { id:'secoes',     label:'Serviços' },
+    { id:'materiais',  label:'Materiais' },
+    { id:'financeiro', label:'Financeiro' },
+    { id:'condicoes',  label:'Condições' },
+    { id:'referencias',label:'Referências' },
   ]
 
-
-
-
-
   return (
-    <div style={{ padding: 24, background: 'var(--bg-primary)', minHeight: '100vh' }}>
+    <div style={{ padding:20, background:'var(--bg-primary)', minHeight:'100vh' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.push('/dashboard/orcamentos')} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <ArrowLeft size={16}/>
-          </button>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>router.push('/dashboard/orcamentos')} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'6px 10px', color:'var(--text-muted)', cursor:'pointer' }}><ArrowLeft size={15}/></button>
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-.3px' }}>
-              {isEdit ? `Orçamento ${data.numero}` : 'Novo Orçamento'}
-            </h1>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Proposta comercial de reforma e pintura</p>
+            <h1 style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)', letterSpacing:'-.3px' }}>{isEdit?`Orçamento ${data.numero}`:'Novo Orçamento'}</h1>
+            <p style={{ fontSize:11, color:'var(--text-muted)' }}>Proposta comercial de reforma e pintura</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select value={data.status} onChange={up('status')} style={{ ...inputStyle, width: 'auto', fontSize: 12 }}>
+        <div style={{ display:'flex', gap:7 }}>
+          <select value={data.status} onChange={up('status')} style={{ ...IS, width:'auto', fontSize:12 }}>
             <option value="pendente">Pendente</option>
             <option value="aprovado">Aprovado</option>
             <option value="reprovado">Reprovado</option>
             <option value="cancelado">Cancelado</option>
           </select>
-          <button onClick={baixarPDF} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', cursor: 'pointer' }}>
-            <Download size={14}/> Baixar PDF
+          <button onClick={baixarPDF} style={{ display:'flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:500, color:'var(--text-primary)', cursor:'pointer' }}>
+            <Download size={13}/> PDF Premium
           </button>
-          <button onClick={salvar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--text-primary)', color: 'var(--bg-primary)', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            <Save size={14}/> {saving ? 'Salvando...' : 'Salvar'}
+          <button onClick={salvar} disabled={saving} style={{ display:'flex', alignItems:'center', gap:5, background:'var(--text-primary)', color:'var(--bg-primary)', border:'none', borderRadius:8, padding:'7px 15px', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+            <Save size={13}/> {saving?'Salvando...':'Salvar'}
           </button>
         </div>
       </div>
 
-      {/* Totais rápidos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+      {/* KPIs */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:14 }}>
         {[
-          { label: 'Mão de obra', value: fmtR$(totalMaoObra), color: '#60a5fa' },
-          { label: 'Materiais', value: fmtR$(totalMateriais), color: '#a78bfa' },
-          { label: 'Total geral', value: fmtR$(totalGeral), color: 'var(--text-primary)' },
-        ].map(({ label, value, color }) => (
-          <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' }}>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, fontWeight: 500 }}>{label}</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color, letterSpacing: '-.5px' }}>{value}</p>
+          { label:'Mão de obra', value:fmtR$(totalMaoObra), color:'#60a5fa' },
+          { label:'Materiais', value:fmtR$(totalMateriais), color:'#a78bfa' },
+          { label:'Total geral', value:fmtR$(totalGeral), color:'var(--text-primary)' },
+          { label:'Seções', value:secoes.length, color:'#34d399' },
+        ].map(({label,value,color})=>(
+          <div key={label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px' }}>
+            <p style={{ fontSize:10, color:'var(--text-muted)', marginBottom:3, fontWeight:500 }}>{label}</p>
+            <p style={{ fontSize:17, fontWeight:700, color, letterSpacing:'-.4px' }}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)} style={{
-            padding: '8px 16px', fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-            color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
-            background: 'none', border: 'none', cursor: 'pointer',
-            borderBottom: tab === t.id ? '2px solid var(--text-primary)' : '2px solid transparent',
-            marginBottom: -1,
+      <div style={{ display:'flex', gap:0, marginBottom:14, borderBottom:'1px solid var(--border)', overflowX:'auto' }}>
+        {TABS.map(t=>(
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{
+            padding:'7px 14px', fontSize:12, fontWeight:tab===t.id?600:400,
+            color:tab===t.id?'var(--text-primary)':'var(--text-muted)',
+            background:'none', border:'none', cursor:'pointer', whiteSpace:'nowrap',
+            borderBottom:tab===t.id?'2px solid var(--text-primary)':'2px solid transparent',
+            marginBottom:-1,
           }}>{t.label}</button>
         ))}
       </div>
 
-      {/* Conteúdo das tabs */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+      {/* Conteúdo */}
+      <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:18 }}>
 
-        {tab === 'empresa' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <ImgUpload label="Logo da empresa" src={logoBase64} onClick={() => logoRef.current?.click()} inputRef={logoRef} onChange={handleImagem(setLogoBase64)} legenda={legendaLogo} onLegenda={setLegendaLogo}/>
-              <ImgUpload label="Foto do serviço 1" src={imgFoto1} onClick={() => foto1Ref.current?.click()} inputRef={foto1Ref} onChange={handleImagem(setImgFoto1)} legenda={legendaFoto1} onLegenda={setLegendaFoto1}/>
+        {/* EMPRESA */}
+        {tab==='empresa' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
+              <Field label="Nome da empresa"><input value={data.empresa_nome} onChange={up('empresa_nome')} style={IS}/></Field>
+              <Field label="CNPJ"><input value={data.empresa_cnpj} onChange={up('empresa_cnpj')} style={IS}/></Field>
+              <Field label="Nº do orçamento"><input value={data.numero} onChange={up('numero')} style={IS}/></Field>
+              <Field label="Telefone"><input value={data.empresa_telefone} onChange={up('empresa_telefone')} style={IS}/></Field>
+              <Field label="WhatsApp"><input value={data.empresa_whatsapp} onChange={up('empresa_whatsapp')} style={IS}/></Field>
+              <Field label="E-mail"><input value={data.empresa_email} onChange={up('empresa_email')} style={IS}/></Field>
+              <Field label="Instagram"><input value={data.empresa_instagram} onChange={up('empresa_instagram')} style={IS}/></Field>
+              <Field label="Responsável"><input value={data.empresa_responsavel} onChange={up('empresa_responsavel')} style={IS}/></Field>
+              <Field label="Experiência"><input value={data.empresa_experiencia} onChange={up('empresa_experiencia')} style={IS} placeholder="Ex: mais de 20 anos"/></Field>
+              <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Endereço</label><input value={data.empresa_endereco} onChange={up('empresa_endereco')} style={IS}/></div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                <Field label="Engenheiro RT"><input value={data.empresa_engenheiro} onChange={up('empresa_engenheiro')} style={IS}/></Field>
+                <Field label="CREA"><input value={data.empresa_crea} onChange={up('empresa_crea')} style={IS}/></Field>
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div style={fieldStyle}><label style={labelStyle}>Nome da empresa</label><input value={data.empresa_nome} onChange={up('empresa_nome')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>CNPJ</label><input value={data.empresa_cnpj} onChange={up('empresa_cnpj')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>Nº do orçamento</label><input value={data.numero} onChange={up('numero')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>Telefone</label><input value={data.empresa_telefone} onChange={up('empresa_telefone')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>WhatsApp</label><input value={data.empresa_whatsapp} onChange={up('empresa_whatsapp')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>E-mail</label><input value={data.empresa_email} onChange={up('empresa_email')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>Instagram</label><input value={data.empresa_instagram} onChange={up('empresa_instagram')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>Responsável</label><input value={data.empresa_responsavel} onChange={up('empresa_responsavel')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>Engenheiro RT</label><input value={data.empresa_engenheiro} onChange={up('empresa_engenheiro')} style={inputStyle}/></div>
-              <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Endereço</label><input value={data.empresa_endereco} onChange={up('empresa_endereco')} style={inputStyle}/></div>
-              <div style={fieldStyle}><label style={labelStyle}>CREA</label><input value={data.empresa_crea} onChange={up('empresa_crea')} style={inputStyle}/></div>
-            </div>
-            <div style={fieldStyle}><label style={labelStyle}>Apresentação da empresa (aparece no PDF)</label><textarea value={data.empresa_apresentacao} onChange={up('empresa_apresentacao')} style={textareaStyle}/></div>
+            <Field label="Apresentação institucional"><textarea value={data.empresa_apresentacao} onChange={up('empresa_apresentacao')} style={TA}/></Field>
           </div>
         )}
 
-        {tab === 'cliente' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={fieldStyle}><label style={labelStyle}>Nome do cliente</label><input value={data.cliente_nome} onChange={up('cliente_nome')} style={inputStyle} placeholder="Nome completo"/></div>
-            <div style={fieldStyle}><label style={labelStyle}>CPF / CNPJ</label><input value={data.cliente_cpf_cnpj} onChange={up('cliente_cpf_cnpj')} style={inputStyle}/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Nome da obra / empreendimento</label><input value={data.cliente_obra} onChange={up('cliente_obra')} style={inputStyle} placeholder="Ex: Residencial Vila Verde"/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Telefone</label><input value={data.cliente_telefone} onChange={up('cliente_telefone')} style={inputStyle}/></div>
-            <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Endereço da obra</label><input value={data.cliente_endereco} onChange={up('cliente_endereco')} style={inputStyle}/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Cidade / Data</label><input value={data.cidade_data} onChange={up('cidade_data')} style={inputStyle} placeholder="Ex: Caxias do Sul"/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Data do orçamento</label><input type="date" value={data.data_orcamento} onChange={up('data_orcamento')} style={inputStyle}/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Validade (dias)</label><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={inputStyle}/></div>
+        {/* CLIENTE */}
+        {tab==='cliente' && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <Field label="Nome do cliente"><input value={data.cliente_nome} onChange={up('cliente_nome')} style={IS} placeholder="Nome completo"/></Field>
+            <Field label="CPF / CNPJ"><input value={data.cliente_cpf_cnpj} onChange={up('cliente_cpf_cnpj')} style={IS}/></Field>
+            <Field label="Nome da obra / empreendimento"><input value={data.cliente_obra} onChange={up('cliente_obra')} style={IS} placeholder="Ex: Residencial Vila Verde"/></Field>
+            <Field label="Telefone"><input value={data.cliente_telefone} onChange={up('cliente_telefone')} style={IS}/></Field>
+            <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Endereço da obra</label><input value={data.cliente_endereco} onChange={up('cliente_endereco')} style={IS}/></div>
+            <Field label="Cidade / Estado"><input value={data.cidade_data} onChange={up('cidade_data')} style={IS}/></Field>
+            <Field label="Data do orçamento"><input type="date" value={data.data_orcamento} onChange={up('data_orcamento')} style={IS}/></Field>
+            <Field label="Validade (dias)"><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={IS}/></Field>
           </div>
         )}
 
-        {tab === 'maoobra' && <ItemTable items={itensMaoObra} setItems={setItensMaoObra} label="mão de obra"/>}
-        {tab === 'materiais' && <ItemTable items={itensMateriais} setItems={setItensMateriais} label="materiais"/>}
-
-        {tab === 'condicoes' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={fieldStyle}><label style={labelStyle}>Prazo de execução</label><input value={data.prazo_execucao} onChange={up('prazo_execucao')} style={inputStyle}/></div>
-            <div style={fieldStyle}><label style={labelStyle}>Validade da proposta (dias)</label><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={inputStyle}/></div>
-            <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Forma de pagamento</label><textarea value={data.forma_pagamento} onChange={up('forma_pagamento')} style={{ ...textareaStyle, minHeight: 60 }}/></div>
-            <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Garantia</label><textarea value={data.garantia} onChange={up('garantia')} style={{ ...textareaStyle, minHeight: 60 }}/></div>
-            <div style={{ ...fieldStyle, gridColumn: 'span 2' }}><label style={labelStyle}>Observações gerais</label><textarea value={data.observacoes} onChange={up('observacoes')} style={textareaStyle}/></div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <ImgUpload label="Foto adicional (aparece no PDF)" src={imgFoto2} onClick={() => foto2Ref.current?.click()} inputRef={foto2Ref} onChange={handleImagem(setImgFoto2)} legenda={legendaFoto2} onLegenda={setLegendaFoto2}/>
-              <input ref={foto2Ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImagem(setImgFoto2)}/>
+        {/* FOTOS */}
+        {tab==='fotos' && (
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <ImgUpload label="Logo da empresa" src={fotos.logo} onFile={setFoto('logo')}/>
+              <ImgUpload label="Foto de capa (página 1)" src={fotos.capa} onFile={setFoto('capa')}/>
+            </div>
+            <p style={{ fontSize:12, fontWeight:600, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'.04em', marginBottom:-4 }}>Galeria da obra (até 4 fotos)</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <ImgUpload label="Foto da obra 1" src={fotos.obra1} onFile={setFoto('obra1')} legenda={legendas.obra1} onLegenda={setLeg('obra1')}/>
+              <ImgUpload label="Foto da obra 2" src={fotos.obra2} onFile={setFoto('obra2')} legenda={legendas.obra2} onLegenda={setLeg('obra2')}/>
+              <ImgUpload label="Foto da obra 3" src={fotos.obra3} onFile={setFoto('obra3')} legenda={legendas.obra3} onLegenda={setLeg('obra3')}/>
+              <ImgUpload label="Foto da obra 4" src={fotos.obra4} onFile={setFoto('obra4')} legenda={legendas.obra4} onLegenda={setLeg('obra4')}/>
             </div>
           </div>
         )}
+
+        {/* DIAGNÓSTICO / PATOLOGIAS */}
+        {tab==='patologias' && (
+          <div>
+            <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Registre as patologias encontradas na obra. Cada uma pode ter foto e descrição técnica.</p>
+            {patologias.map(pat=>(
+              <PatologiaCard key={pat.id} pat={pat}
+                onChange={p=>setPatologias(ps=>ps.map(x=>x.id===p.id?p:x))}
+                onRemove={()=>setPatologias(ps=>ps.filter(x=>x.id!==pat.id))}/>
+            ))}
+            <button onClick={()=>setPatologias(p=>[...p,novaPatologia()])} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-muted)', padding:'7px 12px', borderRadius:8, border:'1px dashed var(--border)', background:'none', cursor:'pointer', marginTop:4 }}>
+              <Plus size={13}/> Adicionar patologia
+            </button>
+          </div>
+        )}
+
+        {/* SERVIÇOS / SEÇÕES */}
+        {tab==='secoes' && (
+          <div>
+            <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Cada seção vira uma página de serviço no PDF com etapas detalhadas e valor.</p>
+            {secoes.map(sec=>(
+              <SecaoCard key={sec.id} sec={sec}
+                onChange={s=>setSecoes(ss=>ss.map(x=>x.id===s.id?s:x))}
+                onRemove={()=>setSecoes(ss=>ss.filter(x=>x.id!==sec.id))}/>
+            ))}
+            <button onClick={()=>setSecoes(s=>[...s,novaSecao()])} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-muted)', padding:'7px 12px', borderRadius:8, border:'1px dashed var(--border)', background:'none', cursor:'pointer' }}>
+              <Plus size={13}/> Adicionar seção de serviço
+            </button>
+          </div>
+        )}
+
+        {/* MATERIAIS */}
+        {tab==='materiais' && <ItemTable items={materiais} setItems={setMateriais}/>}
+
+        {/* FINANCEIRO */}
+        {tab==='financeiro' && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <div style={{ ...FS, gridColumn:'span 2', background:'var(--bg-hover)', border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+                {[
+                  {l:'Mão de obra', v:fmtR$(totalMaoObra), c:'#60a5fa'},
+                  {l:'Materiais',   v:fmtR$(totalMateriais), c:'#a78bfa'},
+                  {l:'Total geral', v:fmtR$(totalGeral), c:'var(--text-primary)'},
+                ].map(({l,v,c})=>(
+                  <div key={l}>
+                    <p style={{ fontSize:11, color:'var(--text-muted)', marginBottom:3 }}>{l}</p>
+                    <p style={{ fontSize:20, fontWeight:700, color:c }}>{v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Field label="Número de parcelas"><input type="number" value={data.num_parcelas} onChange={up('num_parcelas')} style={IS}/></Field>
+            <Field label="Valor de entrada (R$)"><input type="number" value={data.valor_entrada} onChange={up('valor_entrada')} style={IS}/></Field>
+            <Field label="Nº de unidades/apartamentos"><input type="number" value={data.num_unidades} onChange={up('num_unidades')} style={IS} placeholder="0 = não mostrar"/></Field>
+            {+data.num_parcelas > 1 && (
+              <div style={{ ...FS, gridColumn:'span 1' }}>
+                <label style={LS}>Valor por parcela</label>
+                <p style={{ fontSize:20, fontWeight:700, color:'#34d399', padding:'8px 0' }}>
+                  {fmtR$((totalGeral-(+data.valor_entrada||0))/(+data.num_parcelas||1))}
+                </p>
+              </div>
+            )}
+            {+data.num_unidades > 1 && (
+              <div style={FS}>
+                <label style={LS}>Valor por unidade</label>
+                <p style={{ fontSize:20, fontWeight:700, color:'#fbbf24', padding:'8px 0' }}>{fmtR$(totalGeral/(+data.num_unidades||1))}</p>
+              </div>
+            )}
+            <div style={{ ...FS, gridColumn:'span 2' }}>
+              <label style={LS}>Descrição da forma de pagamento</label>
+              <textarea value={data.forma_pagamento} onChange={up('forma_pagamento')} style={TA}/>
+            </div>
+          </div>
+        )}
+
+        {/* CONDIÇÕES */}
+        {tab==='condicoes' && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <Field label="Prazo de execução"><input value={data.prazo_execucao} onChange={up('prazo_execucao')} style={IS}/></Field>
+            <Field label="Validade da proposta (dias)"><input type="number" value={data.validade_dias} onChange={up('validade_dias')} style={IS}/></Field>
+            <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Garantia da tinta</label><textarea value={data.garantia_tinta} onChange={up('garantia_tinta')} style={{ ...TA, minHeight:56 }}/></div>
+            <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Garantia da execução</label><textarea value={data.garantia_execucao} onChange={up('garantia_execucao')} style={{ ...TA, minHeight:56 }}/></div>
+            <div style={{ ...FS, gridColumn:'span 2' }}><label style={LS}>Observações gerais</label><textarea value={data.observacoes} onChange={up('observacoes')} style={TA}/></div>
+          </div>
+        )}
+
+        {/* REFERÊNCIAS */}
+        {tab==='referencias' && (
+          <div>
+            <p style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Lista de clientes e obras anteriores que aparecem no portfólio do PDF.</p>
+            {referencias.map(r=>(
+              <RefCard key={r.id} ref={r}
+                onChange={nr=>setReferencias(rs=>rs.map(x=>x.id===nr.id?nr:x))}
+                onRemove={()=>setReferencias(rs=>rs.filter(x=>x.id!==r.id))}/>
+            ))}
+            <button onClick={()=>setReferencias(r=>[...r,novaRef()])} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-muted)', padding:'7px 12px', borderRadius:8, border:'1px dashed var(--border)', background:'none', cursor:'pointer', marginTop:4 }}>
+              <Plus size={13}/> Adicionar referência
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   )
