@@ -17,6 +17,7 @@ export default function HorariosPage() {
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string|null>(null)
+  const [editId, setEditId] = useState<string|null>(null)
   const [fF, setFF] = useState('')
   const [fD, setFD] = useState('')
   const [fJ, setFJ] = useState('')
@@ -25,6 +26,7 @@ export default function HorariosPage() {
     jornada: 'DIA_INTEIRO' as JornadaTipo,
     entrada: '07:00', saida: '18:00',
     vale: false, discount_value: '', obs: '', absence_reason: '',
+    diaria_custom: '', usar_diaria_custom: false,
   })
   const up = (k: string) => (e: any) => setForm(p => ({ ...p, [k]: e.target.value }))
   const mudarJornada = (j: JornadaTipo) => {
@@ -36,6 +38,26 @@ export default function HorariosPage() {
     (!fD || r.data === fD) &&
     (!fJ || r.jornada === fJ)
   ).sort((a,b) => b.data.localeCompare(a.data))
+
+
+  const abrirEdicao = (r: any) => {
+    setEditId(r.id)
+    setForm({
+      employee_id: r.employee_id,
+      data: r.data,
+      local: r.local || '',
+      jornada: r.jornada,
+      entrada: r.entrada || '07:00',
+      saida: r.saida || '18:00',
+      vale: (Number(r.discount_value)||0) > 0,
+      discount_value: String(Number(r.discount_value)||0||''),
+      obs: r.obs || '',
+      absence_reason: r.absence_reason || '',
+      diaria_custom: String(r.diaria||''),
+      usar_diaria_custom: false,
+    })
+    setModal(true)
+  }
 
   const salvar = async () => {
     if (!form.employee_id || !form.data) return alert('Preencha os campos obrigatórios')
@@ -53,7 +75,7 @@ export default function HorariosPage() {
           data: form.data, local: isAus ? '' : form.local,
           jornada: form.jornada, entrada: isAus ? null : (form.entrada || null),
           saida: isAus ? null : (form.saida || null), horas,
-          diaria: isAus ? 0 : (emp.diaria || 0),
+          diaria: diariaFinal,
           discount_value: (!isAus && form.discount_value) ? Number(form.discount_value) : 0,
           absence_reason: isAus ? form.absence_reason : '',
           obs: form.obs,
@@ -65,7 +87,7 @@ export default function HorariosPage() {
         data: form.data, local: isAus ? '' : form.local,
         jornada: form.jornada, entrada: isAus ? null : (form.entrada || null),
         saida: isAus ? null : (form.saida || null), horas,
-        diaria: isAus ? 0 : (emp.diaria || 0),
+        diaria: diariaFinal,
         vale: false, valor_vale: 0,
         discount_value: (!isAus && form.discount_value) ? Number(form.discount_value) : 0,
         absence_reason: isAus ? form.absence_reason : '',
@@ -75,7 +97,7 @@ export default function HorariosPage() {
       }
       setModal(false)
       setEditId(null)
-      setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'' })
+      setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'', diaria_custom:'', usar_diaria_custom:false })
     } catch { alert('Erro ao salvar') }
     setSaving(false)
   }
@@ -109,7 +131,7 @@ export default function HorariosPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div><h1 className="text-2xl font-extrabold text-white mb-1">Horários</h1><p className="text-gray-400 text-sm">{logs.length} registros</p></div>
-        <button onClick={() => {setEditId(null);setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'' });setModal(true)}} className="btn-primary"><Plus size={16}/> Novo Registro</button>
+        <button onClick={() => {setEditId(null);setForm({ employee_id:'', data:hoje, local:'', jornada:'DIA_INTEIRO', entrada:'07:00', saida:'18:00', vale:false, discount_value:'', obs:'', absence_reason:'', diaria_custom:'', usar_diaria_custom:false });setModal(true)}} className="btn-primary"><Plus size={16}/> Novo Registro</button>
       </div>
 
       <div className="card mb-6 flex gap-4 flex-wrap items-end">
@@ -260,6 +282,22 @@ export default function HorariosPage() {
                       {emp && <span className="text-gray-400">💵 <strong className="text-white">{fmtR$(emp.diaria||0)}</strong></span>}
                     </div>
                   )}
+                  <div className="bg-gray-800 rounded-xl p-4 mb-3">
+                    <p className="label mb-3">Valor da Diária</p>
+                    <div className="flex gap-3 mb-3">
+                      {[false,true].map(v=>(
+                        <button key={String(v)} type="button" onClick={()=>setForm(p=>({...p,usar_diaria_custom:v}))}
+                          className={`flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${form.usar_diaria_custom===v?(v?'border-blue-500 bg-blue-500/15 text-blue-400':'border-green-500 bg-green-500/15 text-green-400'):'border-gray-600 text-gray-400'}`}>
+                          {v?'💰 Valor personalizado':'✓ Usar diária do cadastro'}
+                        </button>
+                      ))}
+                    </div>
+                    {form.usar_diaria_custom ? (
+                      <div><label className="label">Valor da diária (R$)</label><input type="number" value={form.diaria_custom} onChange={up('diaria_custom')} placeholder="Ex: 250" className="input-field"/></div>
+                    ) : (
+                      emp && <p className="text-sm text-gray-400">Diária cadastrada: <span className="text-green-400 font-semibold">R$ {(emp.diaria||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</span></p>
+                    )}
+                  </div>
                   <div className="bg-gray-800 rounded-xl p-4">
                     <p className="label mb-3">Desconto / Adiantamento</p>
                     <div className="flex gap-3 mb-3">
@@ -282,7 +320,7 @@ export default function HorariosPage() {
             <div className="flex justify-end gap-3 p-5 border-t border-gray-800">
               <button onClick={()=>{setModal(false);setEditId(null)}} className="btn-ghost">Cancelar</button>
               <button onClick={salvar} disabled={saving} className="btn-primary">
-                {saving?'Salvando...':isAusencia?'🚫 Registrar Ausência':'Salvar Registro'}
+                {saving?'Salvando...':isAusencia?'🚫 Registrar Ausência':editId?'Salvar Alterações':'Salvar Registro'}
               </button>
             </div>
           </div>

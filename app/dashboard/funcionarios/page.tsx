@@ -1,24 +1,63 @@
 'use client'
 import { useEmployees } from '@/hooks/useData'
 import { useState } from 'react'
-import { Users, Plus, X } from 'lucide-react'
+import { Users, Plus, X, Pencil } from 'lucide-react'
 
 const hoje = new Date().toISOString().split('T')[0]
+const fmtR$ = (v: number) => 'R$ ' + (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})
+
+const formVazio = { nome:'', apelido:'', telefone:'', funcao:'', diaria:'', status:'ativo', admissao: hoje }
 
 export default function FuncionariosPage() {
-  const { employees, loading, add, remove } = useEmployees()
+  const { employees, loading, add, update, remove } = useEmployees()
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ nome:'', apelido:'', telefone:'', funcao:'', diaria:'', status:'ativo', admissao: hoje })
+  const [editId, setEditId] = useState<string|null>(null)
+  const [form, setForm] = useState(formVazio)
+
   const up = (k: string) => (e: any) => setForm(p => ({...p, [k]: e.target.value}))
+
+  const abrirNovo = () => {
+    setEditId(null)
+    setForm(formVazio)
+    setModal(true)
+  }
+
+  const abrirEdicao = (emp: any) => {
+    setEditId(emp.id)
+    setForm({
+      nome: emp.nome || '',
+      apelido: emp.apelido || '',
+      telefone: emp.telefone || '',
+      funcao: emp.funcao || '',
+      diaria: String(emp.diaria || ''),
+      status: emp.status || 'ativo',
+      admissao: emp.admissao || hoje,
+    })
+    setModal(true)
+  }
+
+  const fecharModal = () => {
+    setModal(false)
+    setEditId(null)
+    setForm(formVazio)
+  }
 
   const salvar = async () => {
     if (!form.nome || !form.funcao) return alert('Nome e função são obrigatórios')
     setSaving(true)
     try {
-      await add({ nome: form.nome, apelido: form.apelido, telefone: form.telefone, funcao: form.funcao, diaria: Number(form.diaria) || 0, status: form.status as any, admissao: form.admissao, obs: '' })
-      setModal(false)
-      setForm({ nome:'', apelido:'', telefone:'', funcao:'', diaria:'', status:'ativo', admissao: hoje })
+      const payload = {
+        nome: form.nome, apelido: form.apelido, telefone: form.telefone,
+        funcao: form.funcao, diaria: Number(form.diaria) || 0,
+        status: form.status as any, admissao: form.admissao, obs: '',
+      }
+      if (editId) {
+        await update(editId, payload)
+      } else {
+        await add(payload)
+      }
+      fecharModal()
     } catch(e) { alert('Erro ao salvar') }
     setSaving(false)
   }
@@ -36,7 +75,7 @@ export default function FuncionariosPage() {
           <h1 className="text-2xl font-extrabold text-white mb-1">Funcionários</h1>
           <p className="text-gray-400 text-sm">{employees.length} cadastrados</p>
         </div>
-        <button onClick={() => setModal(true)} className="btn-primary">
+        <button onClick={abrirNovo} className="btn-primary">
           <Plus size={16}/> Novo Funcionário
         </button>
       </div>
@@ -59,7 +98,7 @@ export default function FuncionariosPage() {
             </thead>
             <tbody>
               {employees.map((e, i) => (
-                <tr key={e.id} className={`border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${i % 2 === 1 ? 'bg-gray-800/20' : ''}`}>
+                <tr key={e.id} className={`border-b border-gray-800 hover:bg-gray-800/50 transition-colors ${i%2===1?'bg-gray-800/20':''}`}>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">
@@ -67,22 +106,29 @@ export default function FuncionariosPage() {
                       </div>
                       <div>
                         <p className="text-white font-medium text-sm">{e.nome}</p>
+                        {e.apelido && <p className="text-gray-500 text-xs">{e.apelido}</p>}
                         {e.telefone && <p className="text-gray-500 text-xs">{e.telefone}</p>}
                       </div>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-gray-300 text-sm">{e.funcao || '—'}</td>
-                  <td className="py-3 px-4 text-green-400 font-semibold text-sm">
-                    R$ {(e.diaria || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                  <td className="py-3 px-4 text-green-400 font-semibold text-sm">{fmtR$(e.diaria||0)}</td>
+                  <td className="py-3 px-4">
+                    <span className={e.status==='ativo'?'badge-green':'badge-gray'}>{e.status}</span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={e.status === 'ativo' ? 'badge-green' : 'badge-gray'}>{e.status}</span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <button onClick={() => { if(confirm(`Excluir ${e.nome}?`)) remove(e.id) }}
-                      className="text-red-400 hover:text-red-300 text-xs border border-red-400/30 hover:border-red-400 px-2 py-1 rounded transition-colors">
-                      Excluir
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => abrirEdicao(e)}
+                        className="text-blue-400 hover:text-blue-300 text-xs border border-blue-400/30 hover:border-blue-400 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                        <Pencil size={11}/> Editar
+                      </button>
+                      <button
+                        onClick={() => { if(confirm(`Excluir ${e.nome}?`)) remove(e.id) }}
+                        className="text-red-400 hover:text-red-300 text-xs border border-red-400/30 hover:border-red-400 px-2 py-1 rounded transition-colors">
+                        Excluir
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -92,12 +138,14 @@ export default function FuncionariosPage() {
       </div>
 
       {modal && (
-        <div onClick={e => { if(e.target === e.currentTarget) setModal(false) }}
+        <div onClick={e => { if(e.target===e.currentTarget) fecharModal() }}
           className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl">
             <div className="flex justify-between items-center p-5 border-b border-gray-800">
-              <h2 className="text-white font-bold text-lg">Novo Funcionário</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white"><X size={20}/></button>
+              <h2 className="text-white font-bold text-lg">
+                {editId ? 'Editar Funcionário' : 'Novo Funcionário'}
+              </h2>
+              <button onClick={fecharModal} className="text-gray-400 hover:text-white"><X size={20}/></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -135,9 +183,9 @@ export default function FuncionariosPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 p-5 border-t border-gray-800">
-              <button onClick={() => setModal(false)} className="btn-ghost">Cancelar</button>
+              <button onClick={fecharModal} className="btn-ghost">Cancelar</button>
               <button onClick={salvar} disabled={saving} className="btn-primary">
-                {saving ? 'Salvando...' : 'Salvar Funcionário'}
+                {saving ? 'Salvando...' : editId ? 'Salvar Alterações' : 'Salvar Funcionário'}
               </button>
             </div>
           </div>
