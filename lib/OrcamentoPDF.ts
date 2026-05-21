@@ -101,22 +101,17 @@ const ACCENT = [20, 20, 20] as [number,number,number]
 const LIGHT = [245, 245, 245] as [number,number,number]
 
 
-function imgFormat(b64: string): { fmt: string; data: string } {
-  if (b64.startsWith('data:image/png')) return { fmt: 'PNG', data: b64.split(',')[1] }
-  if (b64.startsWith('data:image/jpeg') || b64.startsWith('data:image/jpg')) return { fmt: 'JPEG', data: b64.split(',')[1] }
-  if (b64.startsWith('data:image/webp')) return { fmt: 'WEBP', data: b64.split(',')[1] }
-  // sem prefixo, assume JPEG
-  return { fmt: 'JPEG', data: b64.includes(',') ? b64.split(',')[1] : b64 }
-}
-
 function addImg(pdf: jsPDF, b64: string, x: number, y: number, w: number, h: number) {
-  if (!b64) return
+  if (!b64 || b64.length < 100) return
   try {
-    const { fmt, data } = imgFormat(b64)
+    let fmt = 'JPEG'
+    let data = b64
+    if (b64.includes('data:image/png')) { fmt = 'PNG'; data = b64.split(',')[1] }
+    else if (b64.includes('data:image/jpeg') || b64.includes('data:image/jpg')) { fmt = 'JPEG'; data = b64.split(',')[1] }
+    else if (b64.includes('data:image/webp')) { fmt = 'JPEG'; data = b64.split(',')[1] }
+    else if (b64.includes(',')) { data = b64.split(',')[1] }
     pdf.addImage(data, fmt, x, y, w, h)
-  } catch(e) {
-    try { addImg(pdf, b64, x, y, w, h) } catch(_) {}
-  }
+  } catch(_) {}
 }
 
 function addWatermark(pdf: jsPDF, texto: string, imgBase64?: string) {
